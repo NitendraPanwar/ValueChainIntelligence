@@ -21,7 +21,7 @@ function ValueChain({ selected, frames, headers, onBack }) {
 
   React.useEffect(() => {
     if (!businessType) {
-      setVcName('');
+      setVcName([]);
       setLoading(false);
       return;
     }
@@ -40,21 +40,29 @@ function ValueChain({ selected, frames, headers, onBack }) {
         const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
         // Find columns
         const headerRow = json[0] || [];
+        // Log the actual header row for debugging
+        console.log('Value Chain Master header row:', headerRow);
         const valueChainCol = headerRow.findIndex(h => h && h.toString().trim().toLowerCase() === 'value chain');
         const nameCol = headerRow.findIndex(h => h && h.toString().trim().toLowerCase() === 'name');
-        if (valueChainCol === -1 || nameCol === -1) {
-          setError('Required columns not found in Value Chain Master.');
+        // Fix typo: 'Decription' instead of 'Description'
+        const descCol = headerRow.findIndex(h => h && h.toString().trim().toLowerCase() === 'description');
+        if (valueChainCol === -1 || nameCol === -1 || descCol === -1) {
+          setError('Required columns not found in Value Chain Master. Columns found: ' + JSON.stringify(headerRow));
           setLoading(false);
           return;
         }
         // Find all rows where Value chain matches businessType
-        const foundNames = [];
+        const found = [];
         for (let i = 1; i < json.length; i++) {
           if (json[i][valueChainCol] && json[i][valueChainCol].toString().trim() === businessType) {
-            if (json[i][nameCol]) foundNames.push(json[i][nameCol]);
+            found.push({
+              name: json[i][nameCol] || '',
+              description: json[i][descCol] || ''
+            });
           }
         }
-        setVcName(foundNames);
+        console.log('Matching rows count:', found.length, 'Rows:', found);
+        setVcName(found);
         setLoading(false);
       })
       .catch(() => {
@@ -70,24 +78,58 @@ function ValueChain({ selected, frames, headers, onBack }) {
         <h2>Powered by Beyond Axis</h2>
       </header>
       <div className="top-frame">
-        Value Chain
+        {`Value Chain${businessType ? ' - ' + businessType : ''}`}
       </div>
       <button className="lets-go-btn" onClick={onBack}>Back</button>
-      <div className="frames" style={{ justifyContent: 'center', marginTop: 32, flexWrap: 'wrap' }}>
-        {loading ? (
-          <div style={{ color: '#888', fontSize: '1.1em', margin: '32px 0' }}>Loading...</div>
-        ) : error ? (
-          <div style={{ color: 'red', fontSize: '1.1em', margin: '32px 0' }}>{error}</div>
-        ) : Array.isArray(vcName) && vcName.length > 0 ? (
-          vcName.map((name, idx) => (
-            <div key={idx} className="frame" style={{ minWidth: 180, margin: '0 16px', flex: 1 }}>
-              <div style={{ fontWeight: 600, fontSize: '1.1em', marginBottom: 8 }}>Value Chain</div>
-              <div style={{ fontSize: '1.2em', color: '#2563eb', fontWeight: 700 }}>{name}</div>
+      {/* Display frames in a single horizontal row */}
+      <div className="frames horizontal-scroll" style={{ marginBottom: 24, paddingLeft: 0, marginLeft: 0, justifyContent: 'flex-start' }}>
+        {Array.isArray(vcName) && vcName.length > 0 &&
+          vcName.map((item, idx) => (
+            <div key={idx} className="frame horizontal-frame" style={{ marginLeft: idx === 0 ? 0 : undefined }}>
+              <div style={{ fontWeight: 700, fontSize: '1.2em', marginBottom: 8, color: '#111' }}>{item.name}</div>
+              <div style={{ fontSize: '0.98em', color: '#444', marginTop: 12 }}>{item.description}</div>
+              {/* Star rating selection */}
+              <StarRating maxStars={4} />
             </div>
           ))
-        ) : (
-          <div style={{ color: '#888', fontSize: '1.1em', margin: '32px 0' }}>No matching value chain found for selected Business Type.</div>
-        )}
+        }
+      </div>
+      {/* Star rating definitions (no header, now in columns, no background) */}
+      <div style={{
+        margin: '32px auto 0',
+        maxWidth: 900,
+        borderRadius: 8,
+        padding: '0',
+        fontSize: '1em',
+        color: '#222',
+        boxShadow: 'none'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: 180, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div>{[0,1,2,3].map(i => (
+              <span key={i} style={{ fontWeight: 700, color: i < 1 ? '#fbbf24' : '#e5e7eb', fontSize: '1.4em' }}>★</span>
+            ))}</div>
+            <div style={{ marginTop: 8 }}>Foundational</div>
+          </div>
+          <div style={{ flex: 1, minWidth: 180, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div>{[0,1,2,3].map(i => (
+              <span key={i} style={{ fontWeight: 700, color: i < 2 ? '#fbbf24' : '#e5e7eb', fontSize: '1.4em' }}>★</span>
+            ))}</div>
+            <div style={{ marginTop: 8 }}>Functional Excellence</div>
+          </div>
+          <div style={{ flex: 1, minWidth: 180, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div>{[0,1,2,3].map(i => (
+              <span key={i} style={{ fontWeight: 700, color: i < 3 ? '#fbbf24' : '#e5e7eb', fontSize: '1.4em' }}>★</span>
+            ))}</div>
+            <div style={{ marginTop: 8 }}>Integrated Value Chain</div>
+          </div>
+          <div style={{ flex: 1, minWidth: 180, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div>{[0,1,2,3].map(i => (
+              <span key={i} style={{ fontWeight: 700, color: i < 4 ? '#fbbf24' : '#e5e7eb', fontSize: '1.4em' }}>★</span>
+            ))}</div>
+            <div style={{ marginTop: 8 }}>Ecosystem-Driven</div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -242,6 +284,32 @@ function App() {
         </div>
       </div>
       <button className="lets-go-btn" onClick={() => setShowValueChain(true)}>Let's GO !</button>
+    </div>
+  );
+}
+
+// Add StarRating component at the bottom of the file
+function StarRating({ maxStars = 4 }) {
+  const [rating, setRating] = React.useState(0);
+  return (
+    <div style={{ marginTop: 16, display: 'flex', gap: 4, justifyContent: 'center' }}>
+      {Array.from({ length: maxStars }).map((_, i) => (
+        <span
+          key={i}
+          style={{
+            cursor: 'pointer',
+            fontSize: '1.5em',
+            color: i < rating ? '#fbbf24' : '#e5e7eb',
+            transition: 'color 0.2s',
+            userSelect: 'none',
+          }}
+          onClick={() => setRating(i + 1)}
+          onMouseEnter={() => setRating(i + 1)}
+          onMouseLeave={() => setRating(rating)}
+        >
+          ★
+        </span>
+      ))}
     </div>
   );
 }
