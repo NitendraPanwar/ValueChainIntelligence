@@ -1,81 +1,50 @@
-# Value Chain Intelligence
+# Value Chain Intelligence Web App
 
-A React-based web application for exploring value chain capabilities and intelligence, powered by Beyond Axis.
+## Overview
+This is a React-based web application for Value Chain Intelligence, powered by Beyond Axis. The app provides a multi-step, interactive UI for exploring value chain stages and business capabilities, reading all data from an Excel file (`VC_Capability_Master.xlsx`).
 
 ## Features
+- **Homepage**: Select business context using mutually exclusive and multi-select frames. Navigation is controlled by a fixed "Let's GO!" button.
+- **Value Chain Page**: Displays value chain stages for the selected business type. Each stage is shown in a horizontally scrollable frame with:
+  - Fixed two-row heading for perfect alignment
+  - Description text
+  - Star rating widget (4-star, always bottom-aligned)
+  - "Next" button to load business capabilities for each stage
+- **Capabilities**: After clicking "Next", each frame displays capability buttons for the selected business type and stage. Each button features:
+  - Traffic light icons (red/orange/green) indicating maturity level (Manual, Homegrown, Specific Product)
+  - Single left click: Flips the button to show the maturity level (or "No MM" if unset)
+  - Double click: Opens a modal to set the maturity level
+- **Modal**: Shows capability name and a dropdown to select maturity level. Updates traffic light color dynamically.
+- **Navigation**: After capabilities are loaded, clicking "Next" again navigates to a third page with the default header and subheader.
+- **Responsive Design**: All layouts are responsive and visually consistent.
+- **Maintainable Styling**: All main styles are in `App.css`.
 
-- **Excel-driven UI**: Reads from `VC_Capability_Master.xlsx` (in `/public`) to dynamically generate the homepage and value chain pages.
-- **Homepage**: Five frames (one per column from the "Homepage" sheet), each value as a toggle button. Mutually exclusive selection logic is configurable in `src/config.js`.
-- **Value Chain Page**:
-  - After selecting a Business Type and clicking "Let's GO!", displays all matching entries from the "Value Chain Master" sheet where the "Value Chain" column matches the selected Business Type.
-  - Each match is shown in a horizontally scrollable frame with the Name as header and Description as body.
-  - **Next button logic:** For each frame, when you click "Next", the app searches the "Capability Master" sheet for all rows where:
-    - "Industry-Specific Variants" matches the selected Business Type, and
-    - "Value Chain Stage" matches the frame's Name.
-    - All matching "Capability Name" values are displayed as buttons under the corresponding frame.
-  - Each frame includes an interactive 4-star rating widget.
-  - Star rating definitions are shown at the bottom in a single row, visually indicating the meaning of each rating.
-- **Responsive, modern UI**: Clean, mobile-friendly layout with visually appealing design.
-- **Easy deployment**: Ready for static hosting (e.g., GitHub Pages).
+## File Structure
+- `src/App.jsx`: Main React logic, navigation, modal, flipping, and traffic light logic
+- `src/App.css`: All main styles, including modal, traffic lights, and frame alignment
+- `src/config.js`: Mutually exclusive headers and maturity level options
+- `public/VC_Capability_Master.xlsx`: Excel data source
+- `README.md`: Project documentation
 
-## Getting Started
-
-### Prerequisites
-- Node.js (v16 or later recommended)
-- npm
-
-### Installation
-
-1. Clone the repository:
-   ```bash
-   git clone <your-repo-url>
-   cd ValueChainIntelligence/client
-   ```
-2. Install dependencies:
+## How to Run
+1. Install dependencies:
    ```bash
    npm install
    ```
-3. Place your `VC_Capability_Master.xlsx` file in the `public/` directory (already present for demo).
-
-### Running Locally
-
-```bash
-npm run dev
-```
-
-- Open the local URL shown in your terminal (typically http://localhost:5173).
-
-### Building for Production
-
-```bash
-npm run build
-```
-
-- The static site will be generated in the `dist/` folder.
-
-### Deploying to GitHub Pages
-
-1. Set the `base` path in `vite.config.js` if deploying to a subpath.
-2. Build the project:
+2. Start the development server:
    ```bash
-   npm run build
+   npm run dev
    ```
-3. Deploy the contents of the `dist/` folder to your GitHub Pages branch (e.g., `gh-pages`).
-
-## Project Structure
-
-- `src/App.jsx` — Main React app, including homepage and value chain logic.
-- `src/config.js` — Configurable mutually exclusive frame logic.
-- `public/VC_Capability_Master.xlsx` — Excel data source.
-- `src/App.css` — Main styles.
+3. Open your browser to the local address shown in the terminal.
 
 ## Customization
-- To change mutually exclusive selection logic, edit `mutuallyExclusiveHeaders` in `src/config.js`.
-- To update Excel data, replace `VC_Capability_Master.xlsx` in `public/`.
+- Update `VC_Capability_Master.xlsx` in `public/` to change value chain, stages, or capabilities.
+- Adjust mutually exclusive logic or maturity levels in `src/config.js`.
+- Update styles in `src/App.css` for branding or layout changes.
 
-## Feedback & Contributions
-Pull requests and feedback are welcome!
+## Status
+- Homepage and Value Chain (Page 2) are fully implemented and tested.
+- Third page is a placeholder for future features.
 
 ---
-
-**Powered by Beyond Axis**
+For questions or contributions, please contact the Beyond Axis team.

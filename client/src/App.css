@@ -104,6 +104,20 @@ body {
   /* custom green with black text and white border */
 }
 
+.frame-btn.flipped {
+  background: #f3f4f6;
+  color: #222;
+  font-weight: 600;
+  border: 1.5px solid #bbb;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  transition: background 0.2s, color 0.2s;
+}
+
+.frame-btn.flipped:hover {
+  background: #e5e7eb;
+  color: #111;
+}
+
 .container {
   width: 100%;
   margin: 0;
@@ -193,12 +207,159 @@ header {
   flex-direction: column;
   scroll-snap-align: start;
   font-size: 0.92em;
+  height: 340px;
 }
 
-.horizontal-frame > div:first-child {
-  font-size: 1.05em;
+.horizontal-frame .frame-content {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
 }
 
-.horizontal-frame > div:last-child {
-  font-size: 0.92em;
+.horizontal-frame > .star-rating,
+.horizontal-frame .star-rating {
+  margin-top: auto;
+}
+
+.star-rating {
+  margin-top: 16px;
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.3);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  background: #fff;
+  padding: 32px;
+  border-radius: 12px;
+  min-width: 320px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+  text-align: center;
+  position: relative;
+}
+
+.modal-close-btn {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  color: #888;
+}
+
+.modal-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 12px;
+  font-size: 1.1em;
+  margin: 24px 0 0 0;
+}
+
+.modal-label {
+  font-weight: 600;
+  color: #444;
+  min-width: 150px;
+  text-align: left;
+  display: inline-block;
+}
+
+.modal-value {
+  font-weight: 400;
+  color: #222;
+  flex: 1;
+  text-align: left;
+  display: inline-block;
+  min-width: 160px;
+}
+
+.modal-content select.modal-value {
+  min-width: 160px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  font-size: 1em;
+}
+
+.traffic-light-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1.5px;
+  margin-left: -22px;
+  margin-top: 0;
+  position: relative;
+  top: -2px;
+  right: 10px;
+  z-index: 2;
+}
+.traffic-light {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+  border: 1.5px solid #e5e7eb;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.07);
+  background: #e5e7eb;
+  transition: background 0.2s;
+}
+.traffic-light.red.active {
+  background: #ef4444;
+}
+.traffic-light.orange.active {
+  background: #f59e42;
+}
+.traffic-light.green.active {
+  background: #22c55e;
+}
+
+.frame-heading-fixed {
+  font-weight: 700;
+  font-size: 1.2em;
+  margin-bottom: 8px;
+  color: #111;
+  min-height: 3.2em; /* ~2 rows */
+  line-height: 1.2;
+  display: block;
+  text-align: left;
+  overflow: hidden;
+  word-break: break-word;
+}
+
+.frame-description {
+  font-size: 0.98em;
+  color: #444;
+  margin-top: 12px;
+}
+
+.capability-btn-group {
+  margin-top: 16px;
+}
+
+.capability-btn-wrapper {
+  position: relative;
+  margin: 4px 0;
+  width: 100%;
+}
+
+.traffic-light-group {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
 }
