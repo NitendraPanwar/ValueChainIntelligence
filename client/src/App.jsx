@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import * as XLSX from 'xlsx';
 import './App.css';
-import { mutuallyExclusiveHeaders } from './config';
+import { mutuallyExclusiveHeaders, maturityLevelOptions } from './config';
 
-function ValueChain({ selected, frames, headers, onBack }) {
+function ValueChain({ selected, frames, headers, onBack, onNextPage }) {
   const [vcName, setVcName] = React.useState('');
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState('');
+  const [capabilitiesByFrame, setCapabilitiesByFrame] = React.useState({});
 
   // Find selected Business Type value
   let businessType = '';
@@ -22,6 +23,7 @@ function ValueChain({ selected, frames, headers, onBack }) {
   React.useEffect(() => {
     if (!businessType) {
       setVcName([]);
+      setCapabilitiesByFrame({});
       setLoading(false);
       return;
     }
@@ -61,7 +63,6 @@ function ValueChain({ selected, frames, headers, onBack }) {
             });
           }
         }
-        console.log('Matching rows count:', found.length, 'Rows:', found);
         setVcName(found);
         setLoading(false);
       })
@@ -71,23 +72,146 @@ function ValueChain({ selected, frames, headers, onBack }) {
       });
   }, [businessType]);
 
+  // New state to control when capabilities are loaded
+  const [capabilitiesLoaded, setCapabilitiesLoaded] = React.useState(false);
+
+  // Moved capability loading logic to a function
+  const loadCapabilities = () => {
+    setLoading(true);
+    setError('');
+    fetch('/VC_Capability_Master.xlsx')
+      .then(res => res.arrayBuffer())
+      .then(data => {
+        const workbook = XLSX.read(data, { type: 'array' });
+        const capSheet = workbook.Sheets['Capability Master'];
+        const capJson = capSheet ? XLSX.utils.sheet_to_json(capSheet, { header: 1 }) : [];
+        const capHeader = capJson[0] || [];
+        const industryCol = capHeader.findIndex(h => h && h.toString().trim().toLowerCase() === 'industry-specific variants');
+        const stageCol = capHeader.findIndex(h => h && h.toString().trim().toLowerCase() === 'value chain stage');
+        const capNameCol = capHeader.findIndex(h => h && h.toString().trim().toLowerCase() === 'capability name');
+        const frameCaps = {};
+        if (capSheet && industryCol !== -1 && stageCol !== -1 && capNameCol !== -1) {
+          vcName.forEach(frame => {
+            const caps = [];
+            for (let i = 1; i < capJson.length; i++) {
+              const industryVal = capJson[i][industryCol]?.toString() || '';
+              const stageVal = capJson[i][stageCol]?.toString().trim();
+              // Split by comma, trim, and compare case-insensitive
+              const industries = industryVal.split(',').map(s => s.trim().toLowerCase());
+              if (
+                (industries.includes(businessType.trim().toLowerCase()) ||
+                 industries.includes('all industries')) &&
+                stageVal === frame.name
+              ) {
+                caps.push(capJson[i][capNameCol]);
+              }
+            }
+            frameCaps[frame.name] = caps;
+          });
+        }
+        setCapabilitiesByFrame(frameCaps);
+        setCapabilitiesLoaded(true); // Set to true after capabilities are loaded
+        setLoading(false);
+      })
+      .catch(() => {
+        setError('Failed to load Capability Master sheet.');
+        setLoading(false);
+      });
+  };
+
+  // Add modal state to ValueChain
+  const [modalOpen, setModalOpen] = React.useState(false);
+  const [modalCapName, setModalCapName] = React.useState('');
+  const [modalMaturityLevel, setModalMaturityLevel] = React.useState('');
+  // Track selected maturity level for each capability
+  const [capMaturity, setCapMaturity] = React.useState({}); // { [capName]: maturityLevel }
+
+  // Track flipped state for each capability button
+  const [flippedCaps, setFlippedCaps] = React.useState({}); // { [capName]: true/false }
+
+  // When opening modal, set current maturity level for that capability
+  const handleCapBtnClick = (cap) => {
+    setModalCapName(cap);
+    setModalOpen(true);
+    setModalMaturityLevel(capMaturity[cap] || '');
+  };
+
+  // When maturity level changes in modal, update state
+  const handleMaturityChange = (e) => {
+    const value = e.target.value;
+    setModalMaturityLevel(value);
+    setCapMaturity((prev) => ({ ...prev, [modalCapName]: value }));
+  };
+
+  // Handle flip on left click
+  const handleCapFlip = (cap) => {
+    setFlippedCaps((prev) => ({ ...prev, [cap]: !prev[cap] }));
+  };
+
   return (
     <div className="container">
-      <header style={{ textAlign: 'right', width: '100%', boxSizing: 'border-box', marginBottom: 0 }}>
-        <h1>Value Chain Intelligence</h1>
-        <h2>Powered by Beyond Axis</h2>
-      </header>
-      <div className="top-frame">
-        {`Value Chain${businessType ? ' - ' + businessType : ''}`}
+      {/* Fixed header and subheader */}
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100%',
+        zIndex: 100,
+        background: '#fff',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+        padding: '16px 0 8px 0',
+        textAlign: 'right',
+      }}>
+        <h1 style={{ margin: 0, fontSize: '2em' }}>Value Chain Intelligence</h1>
+        <h2 style={{ margin: 0, fontSize: '1.1em', fontWeight: 400 }}>Powered by Beyond Axis</h2>
       </div>
-      <button className="lets-go-btn" onClick={onBack}>Back</button>
+      {/* Spacer for fixed header */}
+      <div style={{ height: 90 }} />
+      <div className="top-frame">
+        {capabilitiesLoaded
+          ? `Building Blocks (Business) Capabilities – ${businessType}`
+          : `Value Chain${businessType ? ' - ' + businessType : ''}`}
+      </div>
+      <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+        <button className="lets-go-btn" onClick={capabilitiesLoaded ? onNextPage : loadCapabilities}>
+          {capabilitiesLoaded ? 'Next' : 'Next'}
+        </button>
+      </div>
       {/* Display frames in a single horizontal row */}
       <div className="frames horizontal-scroll" style={{ marginBottom: 24, paddingLeft: 0, marginLeft: 0, justifyContent: 'flex-start' }}>
         {Array.isArray(vcName) && vcName.length > 0 &&
           vcName.map((item, idx) => (
-            <div key={idx} className="frame horizontal-frame" style={{ marginLeft: idx === 0 ? 0 : undefined }}>
-              <div style={{ fontWeight: 700, fontSize: '1.2em', marginBottom: 8, color: '#111' }}>{item.name}</div>
-              <div style={{ fontSize: '0.98em', color: '#444', marginTop: 12 }}>{item.description}</div>
+            <div key={idx} className="frame horizontal-frame">
+              <div className="frame-content">
+                {/* Fixed two-row heading for alignment */}
+                <div className="frame-heading-fixed">{item.name}</div>
+                <div className="frame-description">{item.description}</div>
+                {/* Capability Name buttons - only show if capabilities are loaded */}
+                {capabilitiesLoaded && Array.isArray(capabilitiesByFrame[item.name]) && capabilitiesByFrame[item.name].length > 0 && (
+                  <div className="capability-btn-group">
+                    {capabilitiesByFrame[item.name].map((cap, i) => {
+                      const maturity = capMaturity[cap] || '';
+                      const flipped = flippedCaps[cap];
+                      return (
+                        <div key={i} className="capability-btn-wrapper">
+                          <button
+                            className={`frame-btn${flipped ? ' flipped' : ''}`}
+                            onClick={() => handleCapFlip(cap)}
+                            onDoubleClick={() => handleCapBtnClick(cap)}
+                          >
+                            {flipped ? (maturity ? maturity : 'No MM') : cap}
+                          </button>
+                          <span className="traffic-light-group">
+                            <span className={`traffic-light red${maturity === 'Manual' ? ' active' : ''}`} />
+                            <span className={`traffic-light orange${maturity === 'Homegrown' ? ' active' : ''}`} />
+                            <span className={`traffic-light green${maturity === 'Specific Product' ? ' active' : ''}`} />
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
               {/* Star rating selection */}
               <StarRating maxStars={4} />
             </div>
@@ -131,6 +255,57 @@ function ValueChain({ selected, frames, headers, onBack }) {
           </div>
         </div>
       </div>
+      {/* Modal for capability details */}
+      {modalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <button onClick={() => setModalOpen(false)} className="modal-close-btn">&times;</button>
+            <div className="modal-row">
+              <span className="modal-label">Name:</span>
+              <span className="modal-value">{modalCapName}</span>
+            </div>
+            <div className="modal-row">
+              <span className="modal-label">Maturity level:</span>
+              <select
+                className="modal-value"
+                value={modalMaturityLevel}
+                onChange={handleMaturityChange}
+              >
+                <option value="" disabled>&lt;select an option&gt;</option>
+                {maturityLevelOptions.map(opt => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ThirdPage() {
+  return (
+    <div className="container">
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100%',
+        zIndex: 100,
+        background: '#fff',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+        padding: '16px 0 8px 0',
+        textAlign: 'right',
+      }}>
+        <h1 style={{ margin: 0, fontSize: '2em' }}>Value Chain Intelligence</h1>
+        <h2 style={{ margin: 0, fontSize: '1.1em', fontWeight: 400 }}>Powered by Beyond Axis</h2>
+      </div>
+      <div style={{ height: 90 }} />
+      <div className="top-frame homepage">
+        Let’s build your future ready value chain!
+      </div>
+      {/* Add any additional content for the third page here */}
     </div>
   );
 }
@@ -141,6 +316,7 @@ function App() {
   const [error, setError] = useState('');
   const [selected, setSelected] = useState({}); // { 'frameIdx-btnIdx': true }
   const [showValueChain, setShowValueChain] = useState(false);
+  const [showThirdPage, setShowThirdPage] = useState(false);
 
   useEffect(() => {
     fetch('/VC_Capability_Master.xlsx')
@@ -198,17 +374,34 @@ function App() {
     }
   };
 
+  if (showThirdPage) {
+    return <ThirdPage />;
+  }
+
   if (showValueChain) {
-    return <ValueChain selected={selected} frames={frames} headers={headers} onBack={() => setShowValueChain(false)} />;
+    return <ValueChain selected={selected} frames={frames} headers={headers} onBack={() => setShowValueChain(false)} onNextPage={() => setShowThirdPage(true)} />;
   }
 
   return (
     <div className="container">
-      <header>
-        <h1>Value Chain Intelligence</h1>
-        <h2>Powered by Beyond Axis</h2>
-      </header>
-      <div className="top-frame">
+      {/* Fixed header and subheader */}
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100%',
+        zIndex: 100,
+        background: '#fff',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+        padding: '16px 0 8px 0',
+        textAlign: 'right',
+      }}>
+        <h1 style={{ margin: 0, fontSize: '2em' }}>Value Chain Intelligence</h1>
+        <h2 style={{ margin: 0, fontSize: '1.1em', fontWeight: 400 }}>Powered by Beyond Axis</h2>
+      </div>
+      {/* Spacer for fixed header */}
+      <div style={{ height: 90 }} />
+      <div className="top-frame homepage">
         Let’s build your future ready value chain!
       </div>
       {error && <div style={{ color: 'red', margin: '20px 0' }}>{error}</div>}
@@ -292,7 +485,7 @@ function App() {
 function StarRating({ maxStars = 4 }) {
   const [rating, setRating] = React.useState(0);
   return (
-    <div style={{ marginTop: 16, display: 'flex', gap: 4, justifyContent: 'center' }}>
+    <div className="star-rating">
       {Array.from({ length: maxStars }).map((_, i) => (
         <span
           key={i}
