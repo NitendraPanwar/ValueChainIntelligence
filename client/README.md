@@ -42,6 +42,13 @@ This is a React-based web application for Value Chain Intelligence, powered by B
 - Adjust mutually exclusive logic or maturity levels in `src/config.js`.
 - Update styles in `src/App.css` for branding or layout changes.
 
+## Custom Textbox Formatting on Page 4
+
+- The first formatted textbox under each selected capability displays a floating label "Buy v/s Build?" (top-centered inside the box) and shows justified, rich text content (read-only).
+- The second formatted textbox below it displays a floating label "Industry Leading Platforms" (top-centered inside the box) and shows left-aligned, rich text content (read-only).
+- Both textboxes support HTML formatting for their content and display a default placeholder if no content is present.
+- These enhancements provide a visually clear and user-friendly review of selected capabilities on the final page.
+
 ## Status
 - Homepage and Value Chain (Page 2) are fully implemented and tested.
 - Third page is a placeholder for future features.
