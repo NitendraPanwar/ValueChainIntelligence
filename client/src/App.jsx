@@ -331,7 +331,7 @@ function FourthPage({ businessType, selectedCaps, onBack }) {
                         pointerEvents: 'none',
                         zIndex: 2
                       }}>Buy v/s Build?</div>
-                      <div style={{ minHeight: 30, textAlign: 'justify' }} dangerouslySetInnerHTML={{ __html: item.text1 || '<span style=\"color:#888\">The capability doesn’t create any competitive advantage hence recommendation is to buy instead of build.</span>' }} />
+                      <div style={{ minHeight: 30, textAlign: 'justify' }} dangerouslySetInnerHTML={{ __html: item.text1 || '<span style="color:#888">The capability doesn’t create any competitive advantage hence recommendation is to buy instead of build.</span>' }} />
                     </div>
                     {/* Second formatted textbox below the first */}
                     <div className="cap-textbox cap-textbox-formatted" style={{ marginBottom: 8, position: 'relative', paddingTop: 28 }}>
@@ -355,7 +355,7 @@ function FourthPage({ businessType, selectedCaps, onBack }) {
           </div>
         </div>
         <div className="third-page-actions">
-          <button className="lets-go-btn" onClick={onBack}>Back</button>
+          <button className="lets-go-btn" onClick={() => window.location.reload()}>Start over</button>
         </div>
       </div>
     </div>
