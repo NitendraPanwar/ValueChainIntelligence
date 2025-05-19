@@ -126,14 +126,14 @@ header {
   font-size: 1.5em;
   font-weight: 600;
   text-align: left;
-  padding: 16px 0 12px 32px;
-  margin: 0 0 40px 0;
+  padding: 0 0 0 32px;
+  margin: 0 0 10px 0;
   border-radius: 12px;
   box-shadow: none;
   letter-spacing: 0.01em;
   display: flex;
   align-items: flex-start;
-  min-height: 64px;
+  min-height: 30px;
 }
 
 .lets-go-btn {

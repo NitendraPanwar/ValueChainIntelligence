@@ -9,6 +9,10 @@ A React-based web application for exploring value chain capabilities and intelli
 - **Value Chain Page**:
   - After selecting a Business Type and clicking "Let's GO!", displays all matching entries from the "Value Chain Master" sheet where the "Value Chain" column matches the selected Business Type.
   - Each match is shown in a horizontally scrollable frame with the Name as header and Description as body.
+  - **Next button logic:** For each frame, when you click "Next", the app searches the "Capability Master" sheet for all rows where:
+    - "Industry-Specific Variants" matches the selected Business Type, and
+    - "Value Chain Stage" matches the frame's Name.
+    - All matching "Capability Name" values are displayed as buttons under the corresponding frame.
   - Each frame includes an interactive 4-star rating widget.
   - Star rating definitions are shown at the bottom in a single row, visually indicating the meaning of each rating.
 - **Responsive, modern UI**: Clean, mobile-friendly layout with visually appealing design.

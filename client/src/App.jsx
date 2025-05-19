@@ -7,6 +7,7 @@ function ValueChain({ selected, frames, headers, onBack }) {
   const [vcName, setVcName] = React.useState('');
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState('');
+  const [capabilitiesByFrame, setCapabilitiesByFrame] = React.useState({});
 
   // Find selected Business Type value
   let businessType = '';
@@ -22,6 +23,7 @@ function ValueChain({ selected, frames, headers, onBack }) {
   React.useEffect(() => {
     if (!businessType) {
       setVcName([]);
+      setCapabilitiesByFrame({});
       setLoading(false);
       return;
     }
@@ -61,7 +63,6 @@ function ValueChain({ selected, frames, headers, onBack }) {
             });
           }
         }
-        console.log('Matching rows count:', found.length, 'Rows:', found);
         setVcName(found);
         setLoading(false);
       })
@@ -71,16 +72,77 @@ function ValueChain({ selected, frames, headers, onBack }) {
       });
   }, [businessType]);
 
+  // New state to control when capabilities are loaded
+  const [capabilitiesLoaded, setCapabilitiesLoaded] = React.useState(false);
+
+  // Moved capability loading logic to a function
+  const loadCapabilities = () => {
+    setLoading(true);
+    setError('');
+    fetch('/VC_Capability_Master.xlsx')
+      .then(res => res.arrayBuffer())
+      .then(data => {
+        const workbook = XLSX.read(data, { type: 'array' });
+        const capSheet = workbook.Sheets['Capability Master'];
+        const capJson = capSheet ? XLSX.utils.sheet_to_json(capSheet, { header: 1 }) : [];
+        const capHeader = capJson[0] || [];
+        const industryCol = capHeader.findIndex(h => h && h.toString().trim().toLowerCase() === 'industry-specific variants');
+        const stageCol = capHeader.findIndex(h => h && h.toString().trim().toLowerCase() === 'value chain stage');
+        const capNameCol = capHeader.findIndex(h => h && h.toString().trim().toLowerCase() === 'capability name');
+        const frameCaps = {};
+        if (capSheet && industryCol !== -1 && stageCol !== -1 && capNameCol !== -1) {
+          vcName.forEach(frame => {
+            const caps = [];
+            for (let i = 1; i < capJson.length; i++) {
+              const industryVal = capJson[i][industryCol]?.toString() || '';
+              const stageVal = capJson[i][stageCol]?.toString().trim();
+              // Split by comma, trim, and compare case-insensitive
+              const industries = industryVal.split(',').map(s => s.trim().toLowerCase());
+              if (
+                industries.includes(businessType.trim().toLowerCase()) &&
+                stageVal === frame.name
+              ) {
+                caps.push(capJson[i][capNameCol]);
+              }
+            }
+            frameCaps[frame.name] = caps;
+          });
+        }
+        setCapabilitiesByFrame(frameCaps);
+        setCapabilitiesLoaded(true); // Set to true after capabilities are loaded
+        setLoading(false);
+      })
+      .catch(() => {
+        setError('Failed to load Capability Master sheet.');
+        setLoading(false);
+      });
+  };
+
   return (
     <div className="container">
-      <header style={{ textAlign: 'right', width: '100%', boxSizing: 'border-box', marginBottom: 0 }}>
-        <h1>Value Chain Intelligence</h1>
-        <h2>Powered by Beyond Axis</h2>
-      </header>
+      {/* Fixed header and subheader */}
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100%',
+        zIndex: 100,
+        background: '#fff',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+        padding: '16px 0 8px 0',
+        textAlign: 'right',
+      }}>
+        <h1 style={{ margin: 0, fontSize: '2em' }}>Value Chain Intelligence</h1>
+        <h2 style={{ margin: 0, fontSize: '1.1em', fontWeight: 400 }}>Powered by Beyond Axis</h2>
+      </div>
+      {/* Spacer for fixed header */}
+      <div style={{ height: 90 }} />
       <div className="top-frame">
         {`Value Chain${businessType ? ' - ' + businessType : ''}`}
       </div>
-      <button className="lets-go-btn" onClick={onBack}>Back</button>
+      <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+        <button className="lets-go-btn" onClick={loadCapabilities}>Next</button>
+      </div>
       {/* Display frames in a single horizontal row */}
       <div className="frames horizontal-scroll" style={{ marginBottom: 24, paddingLeft: 0, marginLeft: 0, justifyContent: 'flex-start' }}>
         {Array.isArray(vcName) && vcName.length > 0 &&
@@ -88,6 +150,14 @@ function ValueChain({ selected, frames, headers, onBack }) {
             <div key={idx} className="frame horizontal-frame" style={{ marginLeft: idx === 0 ? 0 : undefined }}>
               <div style={{ fontWeight: 700, fontSize: '1.2em', marginBottom: 8, color: '#111' }}>{item.name}</div>
               <div style={{ fontSize: '0.98em', color: '#444', marginTop: 12 }}>{item.description}</div>
+              {/* Capability Name buttons - only show if capabilities are loaded */}
+              {capabilitiesLoaded && Array.isArray(capabilitiesByFrame[item.name]) && capabilitiesByFrame[item.name].length > 0 && (
+                <div style={{ marginTop: 16 }}>
+                  {capabilitiesByFrame[item.name].map((cap, i) => (
+                    <button key={i} className="frame-btn" style={{ margin: '4px 0' }}>{cap}</button>
+                  ))}
+                </div>
+              )}
               {/* Star rating selection */}
               <StarRating maxStars={4} />
             </div>
@@ -204,11 +274,24 @@ function App() {
 
   return (
     <div className="container">
-      <header>
-        <h1>Value Chain Intelligence</h1>
-        <h2>Powered by Beyond Axis</h2>
-      </header>
-      <div className="top-frame">
+      {/* Fixed header and subheader */}
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100%',
+        zIndex: 100,
+        background: '#fff',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+        padding: '16px 0 8px 0',
+        textAlign: 'right',
+      }}>
+        <h1 style={{ margin: 0, fontSize: '2em' }}>Value Chain Intelligence</h1>
+        <h2 style={{ margin: 0, fontSize: '1.1em', fontWeight: 400 }}>Powered by Beyond Axis</h2>
+      </div>
+      {/* Spacer for fixed header */}
+      <div style={{ height: 90 }} />
+      <div className="top-frame homepage">
         Let’s build your future ready value chain!
       </div>
       {error && <div style={{ color: 'red', margin: '20px 0' }}>{error}</div>}
