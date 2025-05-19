@@ -3,11 +3,9 @@ import * as XLSX from 'xlsx';
 import './App.css';
 import { mutuallyExclusiveHeaders, maturityLevelOptions } from './config';
 
-function ValueChain({ selected, frames, headers, onBack, onNextPage }) {
-  const [vcName, setVcName] = React.useState('');
+function ValueChain({ selected, frames, headers, onBack, onNextPage, vcName, setVcName, capabilitiesByFrame, setCapabilitiesByFrame, capMaturity, setCapMaturity }) {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState('');
-  const [capabilitiesByFrame, setCapabilitiesByFrame] = React.useState({});
 
   // Find selected Business Type value
   let businessType = '';
@@ -70,7 +68,7 @@ function ValueChain({ selected, frames, headers, onBack, onNextPage }) {
         setError('Failed to load Value Chain Master sheet.');
         setLoading(false);
       });
-  }, [businessType]);
+  }, [businessType, setVcName, setCapabilitiesByFrame]);
 
   // New state to control when capabilities are loaded
   const [capabilitiesLoaded, setCapabilitiesLoaded] = React.useState(false);
@@ -110,8 +108,8 @@ function ValueChain({ selected, frames, headers, onBack, onNextPage }) {
           });
         }
         setCapabilitiesByFrame(frameCaps);
-        setCapabilitiesLoaded(true); // Set to true after capabilities are loaded
         setLoading(false);
+        setCapabilitiesLoaded(true);
       })
       .catch(() => {
         setError('Failed to load Capability Master sheet.');
@@ -124,7 +122,7 @@ function ValueChain({ selected, frames, headers, onBack, onNextPage }) {
   const [modalCapName, setModalCapName] = React.useState('');
   const [modalMaturityLevel, setModalMaturityLevel] = React.useState('');
   // Track selected maturity level for each capability
-  const [capMaturity, setCapMaturity] = React.useState({}); // { [capName]: maturityLevel }
+  const [capMaturityState, setCapMaturityState] = React.useState({}); // { [capName]: maturityLevel }
 
   // Track flipped state for each capability button
   const [flippedCaps, setFlippedCaps] = React.useState({}); // { [capName]: true/false }
@@ -284,7 +282,8 @@ function ValueChain({ selected, frames, headers, onBack, onNextPage }) {
   );
 }
 
-function ThirdPage() {
+function FourthPage({ businessType, selectedCaps, onBack }) {
+  // selectedCaps: [{ frameName, capName, description }]
   return (
     <div className="container">
       <div style={{
@@ -303,9 +302,158 @@ function ThirdPage() {
       </div>
       <div style={{ height: 90 }} />
       <div className="top-frame homepage">
-        Let’s build your future ready value chain!
+        {`Enterprise (Digital) Capability Model – ${businessType}`}
       </div>
-      {/* Add any additional content for the third page here */}
+      <div className="third-page-content" style={{ maxWidth: '100%', margin: 0, borderRadius: 0, padding: 0, fontSize: '1em', color: '#222', boxShadow: 'none', background: 'transparent' }}>
+        <div style={{ margin: '32px 0' }}>
+          <div className="frames horizontal-scroll" style={{width: '100%', maxWidth: '100vw', justifyContent: 'flex-start'}}>
+            {selectedCaps.length === 0 && (
+              <div style={{ color: '#888', fontSize: '1.1em', margin: '32px auto' }}>
+                No capabilities selected.
+              </div>
+            )}
+            {selectedCaps.map((item, idx) => (
+              <div key={idx} className="frame horizontal-frame">
+                <div className="frame-content">
+                  <div className="frame-heading-fixed">{item.capName}</div>
+                  {/* Description removed as requested */}
+                  <div className="capability-btn-group">
+                    <div className="cap-textbox cap-textbox-formatted" style={{ marginBottom: 8, position: 'relative', paddingTop: 28 }}>
+                      {/* Label absolutely positioned inside the box, top-centered */}
+                      <div style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        textAlign: 'center',
+                        fontWeight: 600,
+                        background: 'transparent',
+                        pointerEvents: 'none',
+                        zIndex: 2
+                      }}>Buy v/s Build?</div>
+                      <div style={{ minHeight: 30, textAlign: 'justify' }} dangerouslySetInnerHTML={{ __html: item.text1 || '<span style=\"color:#888\">The capability doesn’t create any competitive advantage hence recommendation is to buy instead of build.</span>' }} />
+                    </div>
+                    {/* Second formatted textbox below the first */}
+                    <div className="cap-textbox cap-textbox-formatted" style={{ marginBottom: 8, position: 'relative', paddingTop: 28 }}>
+                      <div style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        textAlign: 'center',
+                        fontWeight: 600,
+                        background: 'transparent',
+                        pointerEvents: 'none',
+                        zIndex: 2
+                      }}>Industry Leading Platforms</div>
+                      <div style={{ minHeight: 30, textAlign: 'left' }} dangerouslySetInnerHTML={{ __html: item.text2 || '<span style=\"color:#888\">1. Salesforce CRM (Link) \n2. Oracle CRM (Link)\n3. Something (Link)\n...</span>' }} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="third-page-actions">
+          <button className="lets-go-btn" onClick={onBack}>Back</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ThirdPage({ businessType, onNext, frames, vcName, capabilitiesByFrame, capMaturity }) {
+  // Filter frames: only those with at least one capability set to 'Manual' or 'Homegrown'
+  const filteredFrames = vcName.filter(frame => {
+    const caps = capabilitiesByFrame[frame.name] || [];
+    return caps.some(cap => capMaturity[cap] === 'Manual' || capMaturity[cap] === 'Homegrown');
+  });
+
+  // Add state for selected checkboxes
+  const [checked, setChecked] = React.useState({}); // { capName: true }
+
+  return (
+    <div className="container">
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100%',
+        zIndex: 100,
+        background: '#fff',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+        padding: '16px 0 8px 0',
+        textAlign: 'right',
+      }}>
+        <h1 style={{ margin: 0, fontSize: '2em' }}>Value Chain Intelligence</h1>
+        <h2 style={{ margin: 0, fontSize: '1.1em', fontWeight: 400 }}>Powered by Beyond Axis</h2>
+      </div>
+      <div style={{ height: 90 }} />
+      <div className="top-frame homepage">
+        {`Enterprise (Digital) Capability Model – ${businessType}`}
+      </div>
+      <div className="third-page-content" style={{
+        maxWidth: '100%',
+        margin: 0,
+        borderRadius: 0,
+        padding: 0,
+        fontSize: '1em',
+        color: '#222',
+        boxShadow: 'none',
+        background: 'transparent',
+      }}>
+        <div style={{ margin: '32px 0' }}>
+          <div className="frames horizontal-scroll" style={{width: '100%', maxWidth: '100vw', justifyContent: 'flex-start'}}>
+            {filteredFrames.length === 0 && (
+              <div style={{ color: '#888', fontSize: '1.1em', margin: '32px auto' }}>
+                No frames have any red or orange capabilities.
+              </div>
+            )}
+            {filteredFrames.map((item, idx) => (
+              <div key={idx} className="frame horizontal-frame">
+                <div className="frame-content">
+                  <div className="frame-heading-fixed">{item.name}</div>
+                  <div className="frame-description">{item.description}</div>
+                  <div className="capability-btn-group">
+                    {(capabilitiesByFrame[item.name] || []).filter(cap => capMaturity[cap] === 'Manual' || capMaturity[cap] === 'Homegrown').map((cap, i) => {
+                      const maturity = capMaturity[cap] || '';
+                      return (
+                        <div key={i} className="capability-btn-wrapper" style={{ position: 'relative' }}>
+                          <input
+                            type="checkbox"
+                            className="cap-checkbox"
+                            style={{ position: 'absolute', top: 4, left: 4, zIndex: 2 }}
+                            checked={!!checked[cap]}
+                            onChange={e => setChecked(prev => ({ ...prev, [cap]: e.target.checked }))}
+                          />
+                          <button className={`frame-btn flipped`} disabled style={{ paddingLeft: 28 }}>{cap}</button>
+                          <span className="traffic-light-group">
+                            <span className={`traffic-light red${maturity === 'Manual' ? ' active' : ''}`} />
+                            <span className={`traffic-light orange${maturity === 'Homegrown' ? ' active' : ''}`} />
+                            <span className={`traffic-light green${maturity === 'Specific Product' ? ' active' : ''}`} />
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="third-page-actions">
+          <button className="lets-go-btn" onClick={() => {
+            // Gather selected capabilities for next page
+            const selectedCaps = [];
+            filteredFrames.forEach(frame => {
+              (capabilitiesByFrame[frame.name] || []).filter(cap => (capMaturity[cap] === 'Manual' || capMaturity[cap] === 'Homegrown') && checked[cap]).forEach(cap => {
+                selectedCaps.push({ frameName: frame.name, capName: cap, description: frame.description });
+              });
+            });
+            onNext(selectedCaps);
+          }}>Next</button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -317,6 +465,12 @@ function App() {
   const [selected, setSelected] = useState({}); // { 'frameIdx-btnIdx': true }
   const [showValueChain, setShowValueChain] = useState(false);
   const [showThirdPage, setShowThirdPage] = useState(false);
+  // In App, lift state for vcName, capabilitiesByFrame, capMaturity
+  const [vcName, setVcName] = useState([]);
+  const [capabilitiesByFrame, setCapabilitiesByFrame] = useState({});
+  const [capMaturity, setCapMaturity] = useState({});
+  const [showFourthPage, setShowFourthPage] = useState(false);
+  const [selectedCaps, setSelectedCaps] = useState([]);
 
   useEffect(() => {
     fetch('/VC_Capability_Master.xlsx')
@@ -374,12 +528,46 @@ function App() {
     }
   };
 
+  if (showFourthPage) {
+    let businessType = '';
+    Object.keys(selected).forEach(key => {
+      if (selected[key]) {
+        const [frameIdx, btnIdx] = key.split('-').map(Number);
+        if (headers[frameIdx] && headers[frameIdx].trim().toLowerCase() === 'business type') {
+          businessType = frames[frameIdx]?.[btnIdx] || '';
+        }
+      }
+    });
+    return <FourthPage businessType={businessType} selectedCaps={selectedCaps} onBack={() => setShowFourthPage(false)} />;
+  }
+
   if (showThirdPage) {
-    return <ThirdPage />;
+    let businessType = '';
+    Object.keys(selected).forEach(key => {
+      if (selected[key]) {
+        const [frameIdx, btnIdx] = key.split('-').map(Number);
+        if (headers[frameIdx] && headers[frameIdx].trim().toLowerCase() === 'business type') {
+          businessType = frames[frameIdx]?.[btnIdx] || '';
+        }
+      }
+    });
+    return <ThirdPage businessType={businessType} onNext={caps => { setSelectedCaps(caps); setShowFourthPage(true); }} frames={frames} vcName={vcName} capabilitiesByFrame={capabilitiesByFrame} capMaturity={capMaturity} />;
   }
 
   if (showValueChain) {
-    return <ValueChain selected={selected} frames={frames} headers={headers} onBack={() => setShowValueChain(false)} onNextPage={() => setShowThirdPage(true)} />;
+    return <ValueChain
+      selected={selected}
+      frames={frames}
+      headers={headers}
+      onBack={() => setShowValueChain(false)}
+      onNextPage={() => setShowThirdPage(true)}
+      vcName={vcName}
+      setVcName={setVcName}
+      capabilitiesByFrame={capabilitiesByFrame}
+      setCapabilitiesByFrame={setCapabilitiesByFrame}
+      capMaturity={capMaturity}
+      setCapMaturity={setCapMaturity}
+    />;
   }
 
   return (
