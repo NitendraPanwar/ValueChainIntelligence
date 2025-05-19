@@ -1,12 +1,77 @@
-# React + Vite
+# Value Chain Intelligence
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A React-based web application for exploring value chain capabilities and intelligence, powered by Beyond Axis.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Excel-driven UI**: Reads from `VC_Capability_Master.xlsx` (in `/public`) to dynamically generate the homepage and value chain pages.
+- **Homepage**: Five frames (one per column from the "Homepage" sheet), each value as a toggle button. Mutually exclusive selection logic is configurable in `src/config.js`.
+- **Value Chain Page**:
+  - After selecting a Business Type and clicking "Let's GO!", displays all matching entries from the "Value Chain Master" sheet where the "Value Chain" column matches the selected Business Type.
+  - Each match is shown in a horizontally scrollable frame with the Name as header and Description as body.
+  - Each frame includes an interactive 4-star rating widget.
+  - Star rating definitions are shown at the bottom in a single row, visually indicating the meaning of each rating.
+- **Responsive, modern UI**: Clean, mobile-friendly layout with visually appealing design.
+- **Easy deployment**: Ready for static hosting (e.g., GitHub Pages).
 
-## Expanding the ESLint configuration
+## Getting Started
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### Prerequisites
+- Node.js (v16 or later recommended)
+- npm
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone <your-repo-url>
+   cd ValueChainIntelligence/client
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Place your `VC_Capability_Master.xlsx` file in the `public/` directory (already present for demo).
+
+### Running Locally
+
+```bash
+npm run dev
+```
+
+- Open the local URL shown in your terminal (typically http://localhost:5173).
+
+### Building for Production
+
+```bash
+npm run build
+```
+
+- The static site will be generated in the `dist/` folder.
+
+### Deploying to GitHub Pages
+
+1. Set the `base` path in `vite.config.js` if deploying to a subpath.
+2. Build the project:
+   ```bash
+   npm run build
+   ```
+3. Deploy the contents of the `dist/` folder to your GitHub Pages branch (e.g., `gh-pages`).
+
+## Project Structure
+
+- `src/App.jsx` — Main React app, including homepage and value chain logic.
+- `src/config.js` — Configurable mutually exclusive frame logic.
+- `public/VC_Capability_Master.xlsx` — Excel data source.
+- `src/App.css` — Main styles.
+
+## Customization
+- To change mutually exclusive selection logic, edit `mutuallyExclusiveHeaders` in `src/config.js`.
+- To update Excel data, replace `VC_Capability_Master.xlsx` in `public/`.
+
+## Feedback & Contributions
+Pull requests and feedback are welcome!
+
+---
+
+**Powered by Beyond Axis**
