@@ -22,7 +22,5 @@ Common structure for the website:
 
 ---
 
-2. Industry specific Domain
+2. Industry specific Domains
 3. Industry Specific Capabilities
-
-
