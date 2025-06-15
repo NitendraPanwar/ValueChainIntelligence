@@ -1,26 +1,34 @@
-# ValueChainIntelligence
-A value chain initiative prototype
+# Value Chain Intelligence
 
-A website.
+A modern web application for Value Chain Intelligence, powered by Beyond Axis.
 
-Common structure for the website:
-    Header : Value Chain Intelligence
-    Subheader : Powered by AI
-1. Home page : 5 frames. Read values from "VC & Capability Master.xlsx" file, Homepage sheet. Each column in the sheet will be a frame. Each value will be represented under frame as a button.
+## Project Structure
 
----
+- `client/` — React frontend (Vite, src/components, public/VC_Capability_Master.xlsx)
+- `server/` — Node.js Express backend (API for saving and retrieving submissions)
+- `VC & Capability Master.xlsx` — Source Excel file for business data
 
-## Progress
-- ✅ Home page is complete: Displays 5 frames, reads from "VC & Capability Master.xlsx" (Homepage sheet), and renders values as buttons.
-- Header and subheader are implemented as specified.
-- UI/UX matches requirements, including selection logic and styling.
+## Features
+- Consistent header and subheader across all pages
+- Homepage with four main business context buttons (Value Chain, Strategic Initiative, Management Score Card, Strategic Office)
+- Add and display value chain names and business types per button context
+- Data is saved to the backend and displayed as interactive buttons
+- Clicking a saved entry shows its full JSON data
+- Responsive, modern UI/UX
+- All runtime/output files (node_modules, submissions.json) are git-ignored
 
-## Next Steps
-- Further work is needed on:
-  - Industry specific Domain page
-  - Industry Specific Capabilities page
+## How to Run
 
----
+1. **Install dependencies**
+   - Frontend: `cd client && npm install`
+   - Backend: `cd ../server && npm install`
+2. **Start the backend**
+   - `npm start` (from the `server` directory)
+3. **Start the frontend**
+   - `npm run dev` (from the `client` directory)
+4. Open your browser to the local address shown in the terminal (usually http://localhost:5173)
 
-2. Industry specific Domains
-3. Industry Specific Capabilities
+## Status
+- All core features implemented and tested
+- Clean, maintainable, and modular codebase
+- Ready for further enhancements as needed
