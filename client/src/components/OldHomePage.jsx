@@ -42,9 +42,7 @@ function OldHomePage({
         <h1 style={{ margin: 0, fontSize: '2em' }}>Value Chain Intelligence</h1>
         <h2 style={{ margin: 0, fontSize: '1.1em', fontWeight: 400 }}>Powered by Beyond Axis</h2>
       </div>
-      {/* Spacer for fixed header */}
-      <div style={{ height: 90 }} />
-      <div className="top-frame homepage">
+      <div className="top-frame homepage" style={{ marginTop: 0, marginBottom: 0 }}>
         Let’s build your future ready value chain!
       </div>
       {error && <div style={{ color: 'red', margin: '20px 0' }}>{error}</div>}

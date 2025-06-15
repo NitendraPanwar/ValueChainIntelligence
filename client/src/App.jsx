@@ -3,6 +3,7 @@ import HomePage from './components/HomePage';
 import OldHomePage from './components/OldHomePage';
 import ValueChain from './components/ValueChain';
 import BuildingBlocks from './components/BuildingBlocks';
+import WizardProgress from './components/WizardProgress';
 import { mutuallyExclusiveHeaders } from './config';
 import './App.css';
 
@@ -18,6 +19,7 @@ function App() {
   const [capMaturity, setCapMaturity] = useState({});
   const [selectedCaps, setSelectedCaps] = useState([]);
   const [preselectedBusinessType, setPreselectedBusinessType] = useState('');
+  const [wizardStep, setWizardStep] = useState(0); // 0: Business Complexity, 1: Value Chain, 2: Business Capabilities, 3: Capability Assessment, 4: Value Chain Ready
 
   // Navigation helpers
   const goToHome = () => setPage('home');
@@ -83,45 +85,53 @@ function App() {
   if (page === 'home') {
     return <HomePage onOk={(selectedType) => {
       setPreselectedBusinessType(selectedType);
+      setWizardStep(0);
       goToOldHome();
     }} />;
   }
 
   if (page === 'oldHome') {
     return (
-      <OldHomePage
-        frames={frames}
-        headers={headers}
-        error={error}
-        selected={selected}
-        handleButtonClick={handleButtonClick}
-        setShowValueChain={() => setPage('valueChain')}
-        preselectedBusinessType={preselectedBusinessType}
-      />
+      <>
+        {/* Spacer for fixed header to prevent overlap */}
+        <div style={{ height: 90 }} />
+        <WizardProgress currentStep={0} styleOverride={{ margin: '0' }} />
+        <OldHomePage
+          frames={frames}
+          headers={headers}
+          error={error}
+          selected={selected}
+          handleButtonClick={handleButtonClick}
+          setShowValueChain={() => { setPage('valueChain'); setWizardStep(1); }}
+          preselectedBusinessType={preselectedBusinessType}
+        />
+      </>
     );
   }
 
   if (page === 'valueChain') {
-    // Provide a setter for ValueChain to update selected in App
     if (typeof window !== 'undefined') {
       window.setAppSelected = (frameIdx, btnIdx) => {
         setSelected(prev => ({ ...prev, [`${frameIdx}-${btnIdx}`]: true }));
       };
     }
     return (
-      <ValueChain
-        selected={selected}
-        frames={frames}
-        headers={headers}
-        onBack={() => setPage('oldHome')}
-        onNextPage={() => setPage('thirdPage')}
-        preselectedBusinessType={preselectedBusinessType}
-      />
+      <>
+        <div style={{ height: 90 }} />
+        <WizardProgress currentStep={1} styleOverride={{ margin: '0' }} />
+        <ValueChain
+          selected={selected}
+          frames={frames}
+          headers={headers}
+          onBack={() => { setPage('oldHome'); setWizardStep(0); }}
+          onNextPage={() => { setPage('thirdPage'); setWizardStep(2); }}
+          preselectedBusinessType={preselectedBusinessType}
+        />
+      </>
     );
   }
 
   if (page === 'thirdPage') {
-    // Find businessType from selected, fallback to preselectedBusinessType if not found
     let businessType = '';
     Object.keys(selected).forEach(key => {
       if (selected[key]) {
@@ -135,10 +145,40 @@ function App() {
       businessType = preselectedBusinessType;
     }
     return (
-      <BuildingBlocks
-        businessType={businessType}
-        onNext={caps => { setSelectedCaps(caps); /* TODO: setPage('fourthPage') */ }}
-      />
+      <>
+        <div style={{ height: 90 }} />
+        <WizardProgress currentStep={2} styleOverride={{ margin: '0' }} />
+        <BuildingBlocks
+          businessType={businessType}
+          onNext={() => { setWizardStep(3); setPage('assessment'); }}
+        />
+      </>
+    );
+  }
+
+  if (page === 'assessment') {
+    return (
+      <>
+        <div style={{ height: 90 }} />
+        <WizardProgress currentStep={3} />
+        <BuildingBlocks
+          businessType={preselectedBusinessType}
+          onNext={() => { setWizardStep(4); setPage('ready'); }}
+        />
+      </>
+    );
+  }
+
+  if (page === 'ready') {
+    return (
+      <>
+        <div style={{ height: 90 }} />
+        <WizardProgress currentStep={4} />
+        <div style={{ textAlign: 'center', marginTop: 80 }}>
+          <h2>Value Chain Ready!</h2>
+          <p>Your value chain has been successfully saved and assessed.</p>
+        </div>
+      </>
     );
   }
 

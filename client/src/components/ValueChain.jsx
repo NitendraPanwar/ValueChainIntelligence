@@ -110,7 +110,6 @@ function ValueChain({ selected, frames, headers, onBack, onNextPage, preselected
         <h1 style={{ margin: 0, fontSize: '2em' }}>Value Chain Intelligence</h1>
         <h2 style={{ margin: 0, fontSize: '1.1em', fontWeight: 400 }}>Powered by Beyond Axis</h2>
       </div>
-      <div style={{ height: 90 }} />
       <div className="top-frame">
         Value Chain{businessType ? ' - ' + businessType : ''}
       </div>

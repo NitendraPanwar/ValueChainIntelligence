@@ -98,7 +98,21 @@ function BuildingBlocks({ businessType, onNext }) {
 
   return (
     <div className="container">
-      {/* ...existing code... */}
+      {/* Fixed header and subheader */}
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100%',
+        zIndex: 100,
+        background: '#fff',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+        padding: '16px 0 8px 0',
+        textAlign: 'right',
+      }}>
+        <h1 style={{ margin: 0, fontSize: '2em' }}>Value Chain Intelligence</h1>
+        <h2 style={{ margin: 0, fontSize: '1.1em', fontWeight: 400 }}>Powered by Beyond Axis</h2>
+      </div>
       <div className="top-frame homepage">
         {`Building Blocks (Business) Capabilities – ${businessType}`}
       </div>
