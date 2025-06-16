@@ -1,9 +1,9 @@
 // Utility function to save a submission to the backend
-export async function saveSubmission({ name, businessType, label }) {
+export async function saveSubmission(data) {
   return fetch('http://localhost:4000/api/save', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, businessType, label })
+    body: JSON.stringify(data)
   });
 }
 

@@ -1,14 +1,16 @@
 import React, { useEffect } from 'react';
+import { saveSubmission } from '../utils/api';
 import StarRating from './StarRating';
 
-function OldHomePage({
+function BusinessComplexity({
   frames,
   headers,
   error,
   selected,
   handleButtonClick,
   setShowValueChain,
-  preselectedBusinessType // Receive preselectedBusinessType as a prop
+  preselectedBusinessType, // Receive preselectedBusinessType as a prop
+  userFlow // receive userFlow as prop
 }) {
   // Auto-select preselected business type on mount
   useEffect(() => {
@@ -24,6 +26,16 @@ function OldHomePage({
     // Only run on mount or when preselectedBusinessType changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preselectedBusinessType]);
+
+  // Helper to get selected value for a header
+  const getSelectedValue = (headerName) => {
+    const idx = headers.findIndex(h => h && h.trim().toLowerCase() === headerName.toLowerCase());
+    if (idx === -1) return '';
+    const btnIdx = Object.keys(selected).find(key => key.startsWith(`${idx}-`) && selected[key]);
+    if (!btnIdx) return '';
+    const btnNum = Number(btnIdx.split('-')[1]);
+    return frames[idx]?.[btnNum] || '';
+  };
 
   return (
     <div className="container">
@@ -76,9 +88,21 @@ function OldHomePage({
           </div>
         ))}
       </div>
-      <button className="lets-go-btn" onClick={() => setShowValueChain(true)}>Let's GO !</button>
+      <button className="lets-go-btn" onClick={async () => {
+        // Save/update submission with Business Complexity and Annual Revenues
+        const businessComplexity = getSelectedValue('Business Complexity');
+        const annualRevenues = getSelectedValue('Annual Revenues (US$)');
+        await saveSubmission({
+          name: userFlow.name,
+          businessType: userFlow.businessType,
+          label: userFlow.label,
+          businessComplexity,
+          annualRevenues
+        });
+        setShowValueChain(true);
+      }}>Let's GO !</button>
     </div>
   );
 }
 
-export default OldHomePage;
+export default BusinessComplexity;

@@ -92,24 +92,15 @@ function HomePage({ onOk }) {
               <span style={{ position: 'absolute', right: 16, top: 12, fontSize: 22, color: '#fff', fontWeight: 700, pointerEvents: 'none', userSelect: 'none' }}>
                 &rarr;
               </span>
-              <span style={{ position: 'absolute', right: 16, bottom: 0, marginBottom: '-2px' }}>
-                <span
-                  style={{
-                    color: '#2563eb',
-                    fontWeight: 700,
-                    fontSize: 18,
-                    cursor: 'pointer',
-                    textDecoration: 'underline dotted',
-                  }}
+              <span style={{ position: 'absolute', right: 2, bottom: -6 }}>
+                <InlineInfoIcon
                   onMouseEnter={e => {
                     const rect = e.currentTarget.getBoundingClientRect();
                     setHoverInfo({ show: true, text: btn.info, x: rect.right, y: rect.bottom });
                   }}
                   onMouseLeave={() => setHoverInfo({ show: false, text: '', x: 0, y: 0 })}
-                  title="More info"
-                >
-                  i
-                </span>
+                  style={{ fontSize: 18 }}
+                />
               </span>
             </button>
           </div>
@@ -182,7 +173,10 @@ function HomePage({ onOk }) {
             <h2>Add Value Chain</h2>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
               <label style={{ minWidth: 140, textAlign: 'right', marginRight: 12 }}>Value Chain Name:&nbsp;</label>
-              <input type="text" value={valueChainName} onChange={e => setValueChainName(e.target.value)} style={{ flex: 1 }} />
+              <input type="text" value={valueChainName} onChange={e => {
+                setValueChainName(e.target.value);
+                localStorage.setItem('valueChainName', e.target.value);
+              }} style={{ flex: 1 }} />
             </div>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
               <label style={{ minWidth: 140, textAlign: 'right', marginRight: 12 }}>Business Type:&nbsp;</label>
@@ -200,7 +194,7 @@ function HomePage({ onOk }) {
                   await saveSubmission({ name: valueChainName, businessType: selectedBusinessType, label: currentButtonLabel });
                   setShowPopup(false);
                   setShowAdd(false);
-                  onOk(selectedBusinessType);
+                  onOk(selectedBusinessType, valueChainName, currentButtonLabel);
                 }}
               >
                 OK

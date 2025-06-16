@@ -1,13 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import * as XLSX from 'xlsx';
 import StarRating from './StarRating';
+import InlineInfoIcon from './InlineInfoIcon';
+import { saveSubmission } from '../utils/api';
 
-function ValueChain({ selected, frames, headers, onBack, onNextPage, preselectedBusinessType, onSelectBusinessType }) {
+function ValueChain({ selected, frames, headers, onBack, onNextPage, preselectedBusinessType, onSelectBusinessType, userFlow }) {
   const [vcName, setVcName] = useState([]);
   const [capabilitiesByFrame, setCapabilitiesByFrame] = useState({});
   const [capMaturity, setCapMaturity] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [hoverInfo, setHoverInfo] = useState({ show: false, text: '', x: 0, y: 0 });
+  const [starRatings, setStarRatings] = useState({}); // { capabilityName: rating }
 
   // Compute the business type to highlight: selected or preselected if none selected
   let selectedBusinessType = '';
@@ -137,31 +141,113 @@ function ValueChain({ selected, frames, headers, onBack, onNextPage, preselected
               isHighlighted = true;
             }
             return (
-              <div key={idx} className={`frame horizontal-frame`}>
-                <div className="frame-content">
-                  <button
-                    className={`frame-btn${isHighlighted ? ' selected' : ''}`}
-                    style={{ width: '100%', marginBottom: 8, background: isHighlighted ? '#4caf50' : undefined, color: isHighlighted ? '#fff' : undefined }}
-                    disabled
-                  >
-                    {item.name}
-                  </button>
-                  <div className="frame-heading-fixed">{item.name}</div>
-                  {/* Remove the description on BuildingBlocks page, only show on ValueChain */}
-                  {typeof onNextPage === 'function' && (
-                    <div className="frame-description">{item.description}</div>
-                  )}
+              <div key={idx} className={`frame horizontal-frame`} style={{ minHeight: 'unset', height: 'auto', padding: '12px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <div className="frame-content" style={{ padding: 0, margin: 0, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ position: 'relative', width: '100%' }}>
+                    <button
+                      className={`frame-btn${isHighlighted ? ' selected' : ''}`}
+                      style={{ width: '100%', marginBottom: 8, background: isHighlighted ? '#4caf50' : undefined, color: isHighlighted ? '#fff' : undefined }}
+                      disabled
+                    >
+                      {item.name}
+                      <span style={{ position: 'absolute', right: 2, bottom: 10 }}>
+                        <InlineInfoIcon
+                          onMouseEnter={e => {
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            setHoverInfo({ show: true, text: item.description, x: rect.right, y: rect.bottom });
+                          }}
+                          onMouseLeave={() => setHoverInfo({ show: false, text: '', x: 0, y: 0 })}
+                          style={{ fontSize: 16, width: 16, height: 16 }}
+                        />
+                      </span>
+                    </button>
+                  </div>
                 </div>
-                <StarRating maxStars={4} />
+                <StarRating maxStars={4} rating={starRatings[item.name] || 0} onChange={r => setStarRatings(prev => ({ ...prev, [item.name]: r }))} />
               </div>
             );
           })
         }
       </div>
+      <div style={{
+        background: '#fff',
+        color: '#222',
+        fontWeight: 400,
+        fontSize: 16,
+        textAlign: 'center',
+        borderRadius: 8,
+        padding: '16px 0',
+        margin: '24px 0 0 0',
+        boxShadow: '0 1px 6px rgba(0,0,0,0.04)'
+      }}>
+        Value Chain Maturity Assessment (Select based on company maturity)
+      </div>
+      <div style={{
+        background: 'transparent',
+        color: '#222',
+        borderRadius: 8,
+        padding: '20px 24px',
+        margin: '20px 0 0 0',
+        boxShadow: 'none',
+        maxWidth: 900,
+        marginLeft: 'auto',
+        marginRight: 'auto',
+        fontSize: 16,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8, width: '100%' }}>
+          {[1,2,3,4].map(level => (
+            <div key={level} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minWidth: 220, maxWidth: 220 }}>
+              {[1,2,3,4].map(i => (
+                <span key={i} style={{ color: i <= level ? '#fbbf24' : '#e5e7eb', fontSize: 22, marginRight: 2 }}>&#9733;</span>
+              ))}
+            </div>
+          ))}
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+          <div style={{ textAlign: 'center', minWidth: 220, maxWidth: 220 }}>Functional</div>
+          <div style={{ textAlign: 'center', minWidth: 220, maxWidth: 220 }}>Foundational Excellence</div>
+          <div style={{ textAlign: 'center', minWidth: 220, maxWidth: 220 }}>Integrated Value Chain</div>
+          <div style={{ textAlign: 'center', minWidth: 220, maxWidth: 220 }}>Ecosystem Driven</div>
+        </div>
+      </div>
       <button className="lets-go-btn" onClick={onBack}>Back</button>
-      <button className="lets-go-btn" style={{ marginLeft: 16 }} onClick={onNextPage}>
+      <button className="lets-go-btn" style={{ marginLeft: 16 }} onClick={async () => {
+        // Save value chain names and star ratings as ValueChain array
+        const valueChainArr = vcName.map(item => ({ Name: item.name, StarRating: starRatings[item.name] || 0 }));
+        await saveSubmission({
+          ...userFlow,
+          ValueChain: valueChainArr
+        });
+        onNextPage();
+      }}>
         Next
       </button>
+      {hoverInfo.show && (
+        <div
+          style={{
+            position: 'fixed',
+            left: hoverInfo.x + 8,
+            top: hoverInfo.y - 40,
+            background: '#fff',
+            color: '#222',
+            border: '1px solid #b6c2d6',
+            borderRadius: 8,
+            boxShadow: '0 4px 16px rgba(0,0,0,0.13)',
+            padding: '12px 18px',
+            fontSize: '1em',
+            zIndex: 2000,
+            minWidth: 220,
+            maxWidth: 320,
+            pointerEvents: 'none',
+            whiteSpace: 'normal',
+          }}
+        >
+          {hoverInfo.text}
+        </div>
+      )}
     </div>
   );
 }

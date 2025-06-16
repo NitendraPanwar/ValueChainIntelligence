@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
+import InlineInfoIcon from './InlineInfoIcon';
+import ExpandedCapabilityView from './ExpandedCapabilityView';
+import CapabilityMaturityAssessment from './CapabilityMaturityAssessment';
 
 function BuildingBlocks({ businessType, onNext }) {
   // State for frames/capabilities
@@ -8,6 +11,10 @@ function BuildingBlocks({ businessType, onNext }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [checked, setChecked] = useState({}); // { capName: true }
+  const [hoverInfo, setHoverInfo] = useState({ show: false, text: '', x: 0, y: 0 });
+  const [popupInfo, setPopupInfo] = useState({ show: false, text: '', x: 0, y: 0 });
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [showAssessment, setShowAssessment] = useState(false);
 
   useEffect(() => {
     if (!businessType) {
@@ -64,7 +71,7 @@ function BuildingBlocks({ businessType, onNext }) {
         const capHeaderRow = capJson[0] || [];
         const capStageCol = capHeaderRow.findIndex(h => h && h.toString().trim().toLowerCase() === 'value chain stage');
         const capNameCol = capHeaderRow.findIndex(h => h && h.toString().trim().toLowerCase() === 'capability name');
-        // const capDescCol = capHeaderRow.findIndex(h => h && h.toString().trim().toLowerCase() === 'description');
+        const capDescCol = capHeaderRow.findIndex(h => h && h.toString().trim().toLowerCase() === 'description');
         if (capStageCol === -1 || capNameCol === -1) {
           setError('Required columns not found in Capability Master. Columns found: ' + JSON.stringify(capHeaderRow));
           setLoading(false);
@@ -81,9 +88,9 @@ function BuildingBlocks({ businessType, onNext }) {
           const row = capJson[i];
           const frameName = row[capStageCol];
           const capability = row[capNameCol];
-          // const capDesc = capDescCol !== -1 ? row[capDescCol] : '';
+          const capDesc = capDescCol !== -1 ? row[capDescCol] : '';
           if (capByFrame[frameName] && capability) {
-            capByFrame[frameName].push({ name: capability });
+            capByFrame[frameName].push({ name: capability, description: capDesc });
           }
         }
         setFrames(foundFrames);
@@ -135,6 +142,7 @@ function BuildingBlocks({ businessType, onNext }) {
                   <div className="capability-btn-group">
                     {(capabilitiesByFrame[item.name] || []).map((cap, i) => (
                       <div key={i} className="capability-btn-wrapper" style={{ position: 'relative' }}>
+                        {/*
                         <input
                           type="checkbox"
                           className="cap-checkbox"
@@ -142,7 +150,32 @@ function BuildingBlocks({ businessType, onNext }) {
                           checked={!!checked[cap.name]}
                           onChange={e => setChecked(prev => ({ ...prev, [cap.name]: e.target.checked }))}
                         />
-                        <button className={`frame-btn flipped`} disabled style={{ paddingLeft: 28 }}>{cap.name}</button>
+                        */}
+                        <button className={`frame-btn flipped`} disabled style={{ paddingLeft: 28, position: 'relative', paddingRight: 24 }}>
+                          {cap.name}
+                        </button>
+                        <span style={{ position: 'absolute', right: 2, bottom: 2, zIndex: 3 }}>
+                          <InlineInfoIcon
+                            onMouseEnter={e => {
+                              if (!popupInfo.show) {
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                setHoverInfo({ show: true, text: cap.description, x: rect.right, y: rect.bottom });
+                              }
+                            }}
+                            onMouseLeave={() => {
+                              if (!popupInfo.show) setHoverInfo({ show: false, text: '', x: 0, y: 0 });
+                            }}
+                            onClick={e => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setPopupInfo({ show: true, text: cap.description });
+                              setHoverInfo({ show: false, text: '', x: 0, y: 0 });
+                              setIsExpanded(false); // Reset expand state
+                              setShowAssessment(false); // Reset assessment state
+                            }}
+                            style={{ fontSize: 16, width: 16, height: 16 }}
+                          />
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -164,6 +197,134 @@ function BuildingBlocks({ businessType, onNext }) {
           }}>Next</button>
         </div>
       </div>
+      {hoverInfo.show && !popupInfo.show && (
+        <div
+          style={{
+            position: 'fixed',
+            left: hoverInfo.x + 8,
+            top: hoverInfo.y - 40,
+            background: '#fff',
+            color: '#222',
+            border: '1px solid #b6c2d6',
+            borderRadius: 8,
+            boxShadow: '0 4px 16px rgba(0,0,0,0.13)',
+            padding: '12px 18px',
+            fontSize: '1em',
+            zIndex: 2000,
+            minWidth: 220,
+            maxWidth: 320,
+            pointerEvents: 'none',
+            whiteSpace: 'normal',
+          }}
+        >
+          {hoverInfo.text}
+        </div>
+      )}
+      {popupInfo.show && (
+        <div
+          style={{
+            position: 'fixed',
+            left: 0,
+            top: 0,
+            width: '100vw',
+            height: '100vh',
+            background: 'rgba(0,0,0,0.18)',
+            zIndex: 3000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <div
+            style={{
+              background: '#fff',
+              color: '#222',
+              border: '1px solid #b6c2d6',
+              borderRadius: 10,
+              boxShadow: '0 4px 24px rgba(0,0,0,0.18)',
+              padding: '24px 32px 18px 24px',
+              fontSize: '1.1em',
+              minWidth: isExpanded ? '90vw' : 220,
+              maxWidth: isExpanded ? '90vw' : 320,
+              minHeight: isExpanded ? '80vh' : undefined,
+              position: 'relative',
+              transition: 'all 0.2s',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'flex-start',
+            }}
+          >
+            {isExpanded ? (
+              showAssessment ? (
+                <CapabilityMaturityAssessment />
+              ) : (
+                <ExpandedCapabilityView
+                  description={popupInfo.text}
+                  onAssess={() => setShowAssessment(true)}
+                />
+              )
+            ) : (
+              popupInfo.text
+            )}
+            <button
+              onClick={() => setIsExpanded(exp => !exp)}
+              style={{
+                position: 'absolute',
+                top: 0,
+                right: 36,
+                width: 32,
+                height: 32,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: 0,
+                background: 'transparent',
+                border: 'none',
+                fontSize: 22,
+                lineHeight: 1,
+                color: '#888',
+                cursor: 'pointer',
+                fontWeight: 700,
+                zIndex: 4000,
+                transform: 'translateY(1px)'
+              }}
+              aria-label="Expand"
+              title={isExpanded ? 'Collapse' : 'Expand'}
+            >
+              ⛶
+            </button>
+            <button
+              onClick={() => {
+                setPopupInfo({ show: false, text: '' });
+                setIsExpanded(false); // Reset expand state on close
+                setShowAssessment(false); // Reset assessment state on close
+              }}
+              style={{
+                position: 'absolute',
+                top: 0,
+                right: 0,
+                width: 32,
+                height: 32,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: 0,
+                background: 'transparent',
+                border: 'none',
+                fontSize: 22,
+                lineHeight: 1,
+                color: '#888',
+                cursor: 'pointer',
+                fontWeight: 700,
+                zIndex: 4000,
+              }}
+              aria-label="Close"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

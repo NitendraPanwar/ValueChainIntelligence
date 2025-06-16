@@ -1,34 +1,38 @@
-# Value Chain Intelligence
+# Value Chain Intelligence App
 
-A modern web application for Value Chain Intelligence, powered by Beyond Axis.
+## Current Progress (as of June 16, 2025)
+- Modular React app with multi-step wizard flow for value chain, business complexity, and capability assessment.
+- Backend (Node.js/Express) for saving and updating submissions in `submissions.json`.
+- Data structure supports nested `ValueChain` array (with Name and StarRating) and preserves all previous data (Business Complexity, Annual Revenues, etc.).
+- All data is merged and updated per user/session, not overwritten.
+- Debug logging enabled on backend for incoming submissions.
 
-## Project Structure
+## How to Resume Work
+1. **Start the backend server:**
+   ```sh
+   cd ValueChainIntelligence/server
+   npm install
+   node index.js
+   ```
+2. **Start the frontend app:**
+   ```sh
+   cd ../client
+   npm install
+   npm run dev
+   ```
+3. **Open the app in your browser:**
+   - Visit [http://localhost:5173](http://localhost:5173) (or the port shown in your terminal)
 
-- `client/` — React frontend (Vite, src/components, public/VC_Capability_Master.xlsx)
-- `server/` — Node.js Express backend (API for saving and retrieving submissions)
-- `VC & Capability Master.xlsx` — Source Excel file for business data
+## Where to Continue
+- All user/session data is now passed as props (`name`, `businessType`, `label`) through the flow.
+- ValueChain page saves capability names and star ratings as a nested array in each submission.
+- You can add new features, validations, or UI/UX improvements as needed.
+- Check server logs for debugging submission data.
 
-## Features
-- Consistent header and subheader across all pages
-- Homepage with four main business context buttons (Value Chain, Strategic Initiative, Management Score Card, Strategic Office)
-- Add and display value chain names and business types per button context
-- Data is saved to the backend and displayed as interactive buttons
-- Clicking a saved entry shows its full JSON data
-- Responsive, modern UI/UX
-- All runtime/output files (node_modules, submissions.json) are git-ignored
+## To Do Next
+- Add more advanced data validation, analytics, or reporting as needed.
+- Enhance UI/UX or add new wizard steps.
+- Integrate with other data sources or APIs if required.
 
-## How to Run
-
-1. **Install dependencies**
-   - Frontend: `cd client && npm install`
-   - Backend: `cd ../server && npm install`
-2. **Start the backend**
-   - `npm start` (from the `server` directory)
-3. **Start the frontend**
-   - `npm run dev` (from the `client` directory)
-4. Open your browser to the local address shown in the terminal (usually http://localhost:5173)
-
-## Status
-- All core features implemented and tested
-- Clean, maintainable, and modular codebase
-- Ready for further enhancements as needed
+---
+**To resume, just follow the steps above. All state and data flow is ready for further enhancements!**

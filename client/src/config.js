@@ -13,3 +13,19 @@ export const maturityLevelOptions = [
   'Homegrown',
   'Specific Product'
 ];
+
+// Business Maturity dropdown values
+export const businessMaturityLevels = [
+  'Initial',
+  'Managed',
+  'Defined',
+  'Quantitatively Managed',
+  'Optimizing'
+];
+
+// Technology Maturity dropdown values
+export const technologyMaturityLevels = [
+  'Manual',
+  'Homegrown',
+  'Specific Product'
+];
