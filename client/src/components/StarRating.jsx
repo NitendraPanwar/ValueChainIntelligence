@@ -4,8 +4,10 @@ function StarRating({ maxStars = 4, rating = 0, onChange }) {
   const [internalRating, setInternalRating] = React.useState(rating);
   React.useEffect(() => { setInternalRating(rating); }, [rating]);
   const handleClick = (r) => {
-    setInternalRating(r);
-    if (onChange) onChange(r);
+    // If clicking the same rating, reset to zero
+    const newRating = (internalRating === r) ? 0 : r;
+    setInternalRating(newRating);
+    if (onChange) onChange(newRating);
   };
   return (
     <div className="star-rating">

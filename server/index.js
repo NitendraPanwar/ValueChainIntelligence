@@ -33,7 +33,7 @@ app.post('/api/save', (req, res) => {
       timestamp: new Date().toISOString(),
       "Business Complexity": businessComplexity,
       "Annual Revenues (US$)": annualRevenues,
-      Capability: Capability || []
+      ValueChain: [] // Initialize as empty array
     });
     fs.writeFileSync(DATA_FILE, JSON.stringify(submissions, null, 2));
     return res.json({ success: true, message: 'Saved.' });
@@ -56,6 +56,48 @@ app.post('/api/save', (req, res) => {
     fs.writeFileSync(DATA_FILE, JSON.stringify(submissions, null, 2));
     return res.json({ success: true, message: 'Updated.' });
   }
+});
+
+// Save capability maturity assessment as nested Capability array within ValueChain
+app.post('/api/saveCapabilityAssessment', (req, res) => {
+  console.log('Received capability assessment:', JSON.stringify(req.body, null, 2));
+  const { name, businessType, label, valueChainName, capabilityName, assessment } = req.body;
+  if (!name || !businessType || !valueChainName || !capabilityName || !assessment) {
+    return res.status(400).json({ error: 'Missing required fields.' });
+  }
+  let submissions = [];
+  if (fs.existsSync(DATA_FILE)) {
+    submissions = JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
+  }
+  // Find the correct submission
+  const idx = submissions.findIndex(
+    s => s.name === name && s.businessType === businessType && s.label === label
+  );
+  if (idx === -1) {
+    return res.status(404).json({ error: 'Submission not found.' });
+  }
+  const submission = submissions[idx];
+  if (!submission.ValueChain) submission.ValueChain = [];
+  // Find the correct ValueChain entry
+  let vc = submission.ValueChain.find(vc => vc.Name === valueChainName);
+  if (!vc) {
+    // If not found, create it
+    vc = { Name: valueChainName, Capability: [] };
+    submission.ValueChain.push(vc);
+  }
+  if (!vc.Capability) vc.Capability = [];
+  // Find or add the capability
+  const capIdx = vc.Capability.findIndex(c => c.Name === capabilityName);
+  const capabilityObj = { Name: capabilityName, ...assessment };
+  if (capIdx === -1) {
+    vc.Capability.push(capabilityObj);
+  } else {
+    vc.Capability[capIdx] = capabilityObj;
+  }
+  submission.timestamp = new Date().toISOString();
+  submissions[idx] = submission;
+  fs.writeFileSync(DATA_FILE, JSON.stringify(submissions, null, 2));
+  return res.json({ success: true, message: 'Capability assessment saved.' });
 });
 
 // Optional: Get all submissions

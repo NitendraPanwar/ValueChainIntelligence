@@ -141,7 +141,11 @@ function HomePage({ onOk }) {
             Add
           </button>,
           ...existingNames.map((entry, idx) => (
-            <button key={idx} className="frame-btn" style={{ width: 240, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }} onClick={() => setSelectedEntry(entry)}>
+            <button key={idx} className="frame-btn" style={{ width: 240, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
+              onClick={() => {
+                setSelectedEntry(null);
+                onOk(entry.businessType, entry.name, entry.label, true); // Pass a flag to indicate direct jump to BusinessCapabilities
+              }}>
               <span>{entry.name}</span>
               <span style={{ fontSize: 14, color: '#666', marginTop: 4 }}>({entry.businessType})</span>
             </button>

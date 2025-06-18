@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import HomePage from './components/HomePage';
 import BusinessComplexity from './components/BusinessComplexity';
 import ValueChain from './components/ValueChain';
-import BuildingBlocks from './components/BuildingBlocks';
+import BusinessCapabilities from './components/BusinessCapabilities';
 import WizardProgress from './components/WizardProgress';
 import WizardProgressPrototypes from './components/WizardProgressPrototypes';
 import { mutuallyExclusiveHeaders } from './config';
@@ -91,11 +91,16 @@ function App() {
         <Route path="*" element={
           (() => {
             if (page === 'home') {
-              return <HomePage onOk={(selectedType, name, label) => {
+              return <HomePage onOk={(selectedType, name, label, directToBlocks) => {
                 setUserFlow({ name, businessType: selectedType, label });
                 setPreselectedBusinessType(selectedType);
                 setWizardStep(0);
-                goToOldHome();
+                if (directToBlocks) {
+                  // Ensure state is set before navigating
+                  setTimeout(() => setPage('thirdPage'), 0);
+                } else {
+                  goToOldHome();
+                }
               }} />;
             }
             if (page === 'oldHome') {
@@ -149,17 +154,24 @@ function App() {
                   }
                 }
               });
-              if (!businessType && preselectedBusinessType) {
+              // Always use preselectedBusinessType if available
+              if (preselectedBusinessType) {
                 businessType = preselectedBusinessType;
               }
+              // Debug log
+              console.log('BusinessCapabilities page: businessType =', businessType, 'preselectedBusinessType =', preselectedBusinessType);
               return (
                 <>
                   <div style={{ height: 90 }} />
                   <WizardProgress currentStep={2} styleOverride={{ margin: '0' }} />
-                  <BuildingBlocks
+                  <BusinessCapabilities
                     businessType={businessType}
-                    onNext={() => { setWizardStep(3); setPage('assessment'); }}
+                    onNext={() => {
+                      setWizardStep(3);
+                      setPage('assessment');
+                    }}
                     userFlow={userFlow}
+                    filterMaturityOnly={false}
                   />
                 </>
               );
@@ -169,10 +181,15 @@ function App() {
                 <>
                   <div style={{ height: 90 }} />
                   <WizardProgress currentStep={3} styleOverride={{ margin: '0' }} />
-                  <BuildingBlocks
+                  <BusinessCapabilities
                     businessType={preselectedBusinessType}
                     onNext={() => { setWizardStep(4); setPage('ready'); }}
+                    onBack={() => {
+                      setWizardStep(2);
+                      setPage('thirdPage');
+                    }}
                     userFlow={userFlow}
+                    filterMaturityOnly={true}
                   />
                 </>
               );

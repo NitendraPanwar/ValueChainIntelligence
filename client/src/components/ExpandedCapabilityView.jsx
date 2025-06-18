@@ -16,8 +16,12 @@ const cardStyle = {
   boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
 };
 
-const ExpandedCapabilityView = ({ description, onAssess }) => (
+const ExpandedCapabilityView = ({ valueChainName, capabilityName, description, onAssess }) => (
   <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start' }}>
+    {/* Top left: Value Chain name and Capability name */}
+    <div style={{ fontWeight: 700, fontSize: '1.1em', margin: '0 0 8px 4px', color: '#2b5cb8' }}>
+      {valueChainName} : {capabilityName}
+    </div>
     {/* Top Frame/Row 1: Description in a card */}
     <div style={{ ...cardStyle, minHeight: 60, margin: '8px 8px 24px 8px', width: 'calc(100% - 16px)', maxWidth: 'none', flex: 'unset', alignItems: 'flex-start', justifyContent: 'center', fontWeight: 500, fontSize: '1.1em', borderRadius: 10 }}>
       {description}

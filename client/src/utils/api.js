@@ -13,3 +13,12 @@ export async function getSubmissions() {
   if (!res.ok) return [];
   return res.json();
 }
+
+// Save capability maturity assessment for a capability within a value chain
+export async function saveCapabilityAssessment(data) {
+  return fetch('http://localhost:4000/api/saveCapabilityAssessment', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+}
