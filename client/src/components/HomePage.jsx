@@ -12,6 +12,10 @@ function HomePage({ onOk }) {
   const [currentButtonLabel, setCurrentButtonLabel] = useState('');
   const [existingNames, setExistingNames] = useState([]);
   const [selectedEntry, setSelectedEntry] = useState(null);
+  const [valueChains, setValueChains] = useState([]); // For Strategic Initiative dropdown
+  const [selectedValueChain, setSelectedValueChain] = useState('');
+  const [valueChainEntries, setValueChainEntries] = useState([]); // For Strategic Initiative dropdown
+  const [selectedValueChainEntry, setSelectedValueChainEntry] = useState('');
   // Info tooltip state
   const [hoverInfo, setHoverInfo] = useState({ show: false, text: '', x: 0, y: 0 });
 
@@ -44,6 +48,40 @@ function HomePage({ onOk }) {
       setExistingNames([]);
     }
   }, [showAdd, currentButtonLabel]);
+
+  // Fetch value chains for Strategic Initiative
+  useEffect(() => {
+    if (showPopup && currentButtonLabel === 'Strategic Initiative') {
+      fetch('/VC_Capability_Master.xlsx')
+        .then(res => res.arrayBuffer())
+        .then(data => {
+          const workbook = XLSX.read(data, { type: 'array' });
+          const vcSheet = workbook.Sheets['Value Chain Master'];
+          if (!vcSheet) return;
+          const vcJson = XLSX.utils.sheet_to_json(vcSheet, { header: 1 });
+          const valueChainCol = (vcJson[0] || []).findIndex(h => h && h.toString().trim().toLowerCase() === 'value chain');
+          const names = [];
+          for (let i = 1; i < vcJson.length; i++) {
+            const val = vcJson[i][valueChainCol];
+            if (val && !names.includes(val)) names.push(val);
+          }
+          setValueChains(names);
+        });
+    }
+  }, [showPopup, currentButtonLabel]);
+
+  // Fetch value chain entries from submissions for Strategic Initiative
+  useEffect(() => {
+    if (showPopup && currentButtonLabel === 'Strategic Initiative') {
+      import('../utils/api').then(api => {
+        api.getSubmissions().then(subs => {
+          // Only entries created with the Value chain button
+          const entries = subs.filter(s => s.label === 'Value chain');
+          setValueChainEntries(entries);
+        });
+      });
+    }
+  }, [showPopup, currentButtonLabel]);
 
   return (
     <div className="container">
@@ -130,15 +168,25 @@ function HomePage({ onOk }) {
         </div>
       )}
       {showAdd && (() => {
+        // Map for sublabels
+        const subLabelMap = {
+          'Value chain': 'New Value Chain',
+          'Strategic Initiative': 'New Strategic Initiative',
+          'Management Score Card': 'New Management Score Card',
+          'Strategic Office': 'New Strategic Office'
+        };
         // Always render Add button first, then entry buttons
         const allButtons = [
           <button
             key="add"
             className="frame-btn"
-            style={{ width: 240 }}
+            style={{ width: 240, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
             onClick={() => setShowPopup(true)}
           >
             Add
+            <span style={{ fontSize: 14, color: '#666', marginTop: 4 }}>
+              ({subLabelMap[currentButtonLabel] || 'New Entry'})
+            </span>
           </button>,
           ...existingNames.map((entry, idx) => (
             <button key={idx} className="frame-btn" style={{ width: 240, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
@@ -174,37 +222,71 @@ function HomePage({ onOk }) {
       {showPopup && (
         <div className="modal-overlay">
           <div className="modal-content">
-            <h2>Add Value Chain</h2>
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
-              <label style={{ minWidth: 140, textAlign: 'right', marginRight: 12 }}>Value Chain Name:&nbsp;</label>
-              <input type="text" value={valueChainName} onChange={e => {
-                setValueChainName(e.target.value);
-                localStorage.setItem('valueChainName', e.target.value);
-              }} style={{ flex: 1 }} />
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
-              <label style={{ minWidth: 140, textAlign: 'right', marginRight: 12 }}>Business Type:&nbsp;</label>
-              <select value={selectedBusinessType} onChange={e => setSelectedBusinessType(e.target.value)} style={{ flex: 1 }}>
-                <option value="">Select...</option>
-                {businessTypes.map((type, idx) => (
-                  <option key={idx} value={type}>{type}</option>
-                ))}
-              </select>
-            </div>
-            <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-              <button
-                className="frame-btn"
-                onClick={async () => {
-                  await saveSubmission({ name: valueChainName, businessType: selectedBusinessType, label: currentButtonLabel });
-                  setShowPopup(false);
-                  setShowAdd(false);
-                  onOk(selectedBusinessType, valueChainName, currentButtonLabel);
-                }}
-              >
-                OK
-              </button>
-              <button className="frame-btn" onClick={() => setShowPopup(false)}>Cancel</button>
-            </div>
+            {currentButtonLabel === 'Strategic Initiative' ? (
+              <>
+                <h2>Select Value Chain Entry</h2>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+                  <label style={{ minWidth: 140, textAlign: 'right', marginRight: 12 }}>Value Chain:&nbsp;</label>
+                  <select value={selectedValueChainEntry} onChange={e => setSelectedValueChainEntry(e.target.value)} style={{ flex: 1 }}>
+                    <option value="">Select...</option>
+                    {valueChainEntries.map((entry, idx) => (
+                      <option key={idx} value={entry.name}>{entry.name} ({entry.businessType})</option>
+                    ))}
+                  </select>
+                </div>
+                <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+                  <button
+                    className="frame-btn"
+                    onClick={() => {
+                      const entry = valueChainEntries.find(e => e.name === selectedValueChainEntry);
+                      setShowPopup(false);
+                      setShowAdd(false);
+                      if (entry) {
+                        onOk(entry.businessType, entry.name, 'Strategic Initiative', true);
+                      }
+                    }}
+                    disabled={!selectedValueChainEntry}
+                  >
+                    OK
+                  </button>
+                  <button className="frame-btn" onClick={() => setShowPopup(false)}>Cancel</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h2>Add Value Chain</h2>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+                  <label style={{ minWidth: 140, textAlign: 'right', marginRight: 12 }}>Value Chain Name:&nbsp;</label>
+                  <input type="text" value={valueChainName} onChange={e => {
+                    setValueChainName(e.target.value);
+                    localStorage.setItem('valueChainName', e.target.value);
+                  }} style={{ flex: 1 }} />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+                  <label style={{ minWidth: 140, textAlign: 'right', marginRight: 12 }}>Business Type:&nbsp;</label>
+                  <select value={selectedBusinessType} onChange={e => setSelectedBusinessType(e.target.value)} style={{ flex: 1 }}>
+                    <option value="">Select...</option>
+                    {businessTypes.map((type, idx) => (
+                      <option key={idx} value={type}>{type}</option>
+                    ))}
+                  </select>
+                </div>
+                <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+                  <button
+                    className="frame-btn"
+                    onClick={async () => {
+                      await saveSubmission({ name: valueChainName, businessType: selectedBusinessType, label: currentButtonLabel });
+                      setShowPopup(false);
+                      setShowAdd(false);
+                      onOk(selectedBusinessType, valueChainName, currentButtonLabel);
+                    }}
+                  >
+                    OK
+                  </button>
+                  <button className="frame-btn" onClick={() => setShowPopup(false)}>Cancel</button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

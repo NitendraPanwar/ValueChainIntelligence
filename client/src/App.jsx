@@ -5,6 +5,7 @@ import ValueChain from './components/ValueChain';
 import BusinessCapabilities from './components/BusinessCapabilities';
 import WizardProgress from './components/WizardProgress';
 import WizardProgressPrototypes from './components/WizardProgressPrototypes';
+import StrategicInitiativePage from './components/StrategicInitiativePage';
 import { mutuallyExclusiveHeaders } from './config';
 import './App.css';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
@@ -92,11 +93,14 @@ function App() {
           (() => {
             if (page === 'home') {
               return <HomePage onOk={(selectedType, name, label, directToBlocks) => {
+                // Debug log for navigation
+                console.log('onOk called:', { selectedType, name, label, directToBlocks });
                 setUserFlow({ name, businessType: selectedType, label });
                 setPreselectedBusinessType(selectedType);
                 setWizardStep(0);
-                if (directToBlocks) {
-                  // Ensure state is set before navigating
+                if (label === 'Strategic Initiative' && directToBlocks) {
+                  setPage('strategicInitiative');
+                } else if (directToBlocks) {
                   setTimeout(() => setPage('thirdPage'), 0);
                 } else {
                   goToOldHome();
@@ -205,6 +209,11 @@ function App() {
                   </div>
                 </>
               );
+            }
+            if (page === 'strategicInitiative') {
+              // Debug log for page render
+              console.log('Rendering StrategicInitiativePage', userFlow);
+              return <StrategicInitiativePage valueChain={userFlow.name} businessType={userFlow.businessType} label={userFlow.label} />;
             }
             // fallback
             return null;

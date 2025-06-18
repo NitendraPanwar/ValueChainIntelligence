@@ -1,11 +1,15 @@
 # Value Chain Intelligence App
 
-## Current Progress (as of June 16, 2025)
+## Current Progress (as of June 18, 2025)
 - Modular React app with multi-step wizard flow for value chain, business complexity, and capability assessment.
 - Backend (Node.js/Express) for saving and updating submissions in `submissions.json`.
 - Data structure supports nested `ValueChain` array (with Name and StarRating) and preserves all previous data (Business Complexity, Annual Revenues, etc.).
 - All data is merged and updated per user/session, not overwritten.
 - Debug logging enabled on backend for incoming submissions.
+- Major frontend refactor: `BuildingBlocks.jsx` is now `BusinessCapabilities.jsx` (all references updated).
+- UI/UX matches original design: horizontal scroll for frames, segmented toggle (capability/business/technology), modern header/subheader.
+- Unused files (e.g., `OldHomePage.jsx`, `BuildingBlocks.jsx`) have been removed for a clean codebase.
+- All navigation flows (add, saved entry, wizard) are working and tested.
 
 ## How to Resume Work
 1. **Start the backend server:**
@@ -28,6 +32,7 @@
 - ValueChain page saves capability names and star ratings as a nested array in each submission.
 - You can add new features, validations, or UI/UX improvements as needed.
 - Check server logs for debugging submission data.
+- Codebase is modular and clean; all unused files have been removed.
 
 ## To Do Next
 - Add more advanced data validation, analytics, or reporting as needed.
