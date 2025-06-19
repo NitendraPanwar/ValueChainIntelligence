@@ -100,6 +100,49 @@ app.post('/api/saveCapabilityAssessment', (req, res) => {
   return res.json({ success: true, message: 'Capability assessment saved.' });
 });
 
+// Save initiative (Strategic Initiative flow)
+app.post('/api/save-initiative', (req, res) => {
+  console.log('[Initiative] Received:', JSON.stringify(req.body, null, 2));
+  const { initiativeName, initiativeOwner, initiativeScope, initiativeFunction, valueChainEntryName, label, selectedSuggestions } = req.body;
+  if (!initiativeName || !initiativeOwner || !initiativeScope || !initiativeFunction || !valueChainEntryName) {
+    return res.status(400).json({ error: 'All fields are required.' });
+  }
+  let submissions = [];
+  if (fs.existsSync(DATA_FILE)) {
+    submissions = JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
+  }
+  // Check for existing initiative by initiativeName and valueChainEntryName
+  const idx = submissions.findIndex(s => s.initiativeName === initiativeName && s.valueChainEntryName === valueChainEntryName);
+  if (idx !== -1) {
+    // Update existing
+    submissions[idx] = {
+      ...submissions[idx],
+      initiativeOwner,
+      initiativeScope,
+      initiativeFunction,
+      label: label || 'Strategic Initiative',
+      timestamp: new Date().toISOString(),
+      selectedSuggestions: selectedSuggestions || submissions[idx].selectedSuggestions || []
+    };
+    fs.writeFileSync(DATA_FILE, JSON.stringify(submissions, null, 2));
+    return res.json({ success: true, message: 'Initiative updated.' });
+  } else {
+    // Add new
+    submissions.push({
+      initiativeName,
+      initiativeOwner,
+      initiativeScope,
+      initiativeFunction,
+      valueChainEntryName,
+      label: label || 'Strategic Initiative',
+      timestamp: new Date().toISOString(),
+      selectedSuggestions: selectedSuggestions || []
+    });
+    fs.writeFileSync(DATA_FILE, JSON.stringify(submissions, null, 2));
+    return res.json({ success: true, message: 'Initiative saved.' });
+  }
+});
+
 // Optional: Get all submissions
 app.get('/api/submissions', (req, res) => {
   if (!fs.existsSync(DATA_FILE)) return res.json([]);

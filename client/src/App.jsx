@@ -6,6 +6,7 @@ import BusinessCapabilities from './components/BusinessCapabilities';
 import WizardProgress from './components/WizardProgress';
 import WizardProgressPrototypes from './components/WizardProgressPrototypes';
 import StrategicInitiativePage from './components/StrategicInitiativePage';
+import SelectedCapabilitiesPage from './components/SelectedCapabilitiesPage';
 import { mutuallyExclusiveHeaders } from './config';
 import './App.css';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
@@ -89,12 +90,12 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/prototype" element={<WizardProgressPrototypes />} />
+        <Route path="/strategic-initiative/selected-capabilities" element={<SelectedCapabilitiesPage />} />
         <Route path="*" element={
           (() => {
             if (page === 'home') {
               return <HomePage onOk={(selectedType, name, label, directToBlocks) => {
-                // Debug log for navigation
-                console.log('onOk called:', { selectedType, name, label, directToBlocks });
+                // Removed debug log for navigation
                 setUserFlow({ name, businessType: selectedType, label });
                 setPreselectedBusinessType(selectedType);
                 setWizardStep(0);
@@ -162,8 +163,7 @@ function App() {
               if (preselectedBusinessType) {
                 businessType = preselectedBusinessType;
               }
-              // Debug log
-              console.log('BusinessCapabilities page: businessType =', businessType, 'preselectedBusinessType =', preselectedBusinessType);
+              // Removed debug log for businessType
               return (
                 <>
                   <div style={{ height: 90 }} />
@@ -211,8 +211,7 @@ function App() {
               );
             }
             if (page === 'strategicInitiative') {
-              // Debug log for page render
-              console.log('Rendering StrategicInitiativePage', userFlow);
+              // Removed debug log for page render
               return <StrategicInitiativePage valueChain={userFlow.name} businessType={userFlow.businessType} label={userFlow.label} />;
             }
             // fallback

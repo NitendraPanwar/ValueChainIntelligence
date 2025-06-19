@@ -29,3 +29,29 @@ export const technologyMaturityLevels = [
   'Homegrown',
   'Specific Product'
 ];
+
+// Strategic Focus button list
+export const stragtegicfocus = [
+  'Organic Growth',
+  'Inorganic Growth (M&A)',
+  'Cost Optimization',
+  'Digital Transformation',
+  '...'
+];
+
+// Initiative scope Focus button list
+export const initiativescope = [
+  'Global',
+  'Regional',
+  'Country',
+  'Area'
+];
+
+// Initiative function Focus button list
+export const initiativefunction = [
+  'CEO',
+  'CCO',
+  'COO',
+  'CIO',
+  'CTO'
+];

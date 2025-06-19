@@ -194,8 +194,19 @@ function HomePage({ onOk }) {
                 setSelectedEntry(null);
                 onOk(entry.businessType, entry.name, entry.label, true); // Pass a flag to indicate direct jump to BusinessCapabilities
               }}>
-              <span>{entry.name}</span>
-              <span style={{ fontSize: 14, color: '#666', marginTop: 4 }}>({entry.businessType})</span>
+              {currentButtonLabel === 'Strategic Initiative' ? (
+                <>
+                  <span style={{ fontWeight: 600 }}>{entry.initiativeName || entry.name}</span>
+                  <span style={{ fontSize: 14, color: '#666', marginTop: 4 }}>
+                    ({entry.valueChainEntryName || entry.businessType})
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span>{entry.name}</span>
+                  <span style={{ fontSize: 14, color: '#666', marginTop: 4 }}>({entry.businessType})</span>
+                </>
+              )}
             </button>
           ))
         ];

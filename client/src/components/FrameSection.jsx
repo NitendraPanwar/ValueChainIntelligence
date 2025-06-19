@@ -10,7 +10,10 @@ function FrameSection({
   setPopupInfo,
   setHoverInfo,
   setIsExpanded,
-  setShowAssessment
+  setShowAssessment,
+  showCheckboxInFilteredView,
+  onCapabilitySelect,
+  selectedCapabilities
 }) {
   return (
     <div className="frame horizontal-frame">
@@ -26,6 +29,9 @@ function FrameSection({
               frameName={frame.name}
               displayMode={displayMode}
               capabilityMaturity={capabilityMaturity}
+              showCheckboxInFilteredView={showCheckboxInFilteredView}
+              onCapabilitySelect={onCapabilitySelect}
+              selectedCapabilities={selectedCapabilities}
               onInfoClick={e => {
                 e.preventDefault();
                 e.stopPropagation();

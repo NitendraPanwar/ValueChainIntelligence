@@ -9,7 +9,7 @@ import FrameSection from './FrameSection';
 import CapabilityPopupModal from './CapabilityPopupModal';
 import { useValueChainData } from '../utils/useValueChainData';
 
-function BusinessCapabilities({ businessType, onNext, userFlow, filterMaturityOnly, onBack }) {
+function BusinessCapabilities({ businessType, onNext, userFlow, filterMaturityOnly, onBack, showCheckboxInFilteredView, onCapabilitySelect, selectedCapabilities }) {
   // State for frames/capabilities
   const { frames, capabilitiesByFrame, loading, error } = useValueChainData(businessType);
   const [checked, setChecked] = useState({}); // { capName: true }
@@ -169,6 +169,9 @@ function BusinessCapabilities({ businessType, onNext, userFlow, filterMaturityOn
                   setHoverInfo={setHoverInfo}
                   setIsExpanded={setIsExpanded}
                   setShowAssessment={setShowAssessment}
+                  showCheckboxInFilteredView={showCheckboxInFilteredView}
+                  onCapabilitySelect={onCapabilitySelect}
+                  selectedCapabilities={selectedCapabilities}
                 />
               )
             ))}

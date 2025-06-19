@@ -22,3 +22,13 @@ export async function saveCapabilityAssessment(data) {
     body: JSON.stringify(data)
   });
 }
+
+// Utility function to save initiative details to the backend
+export async function saveInitiative(initiative) {
+  const res = await fetch('http://localhost:4000/api/save-initiative', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(initiative)
+  });
+  return res.json();
+}
