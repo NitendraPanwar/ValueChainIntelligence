@@ -19,6 +19,13 @@
 - **MongoDB integration:** Backend now connects to MongoDB Atlas using environment variables in `.env`.
 - **File import endpoint:** Backend supports `/api/upload-xlsx` for Excel file upload and sheet name extraction (UI pending).
 
+## MongoDB Data Load (Keep Separate)
+- **Note:** The scripts and logic for loading data into MongoDB (e.g., from Excel files) are kept separate from the main project codebase.
+- To load data into MongoDB, use a dedicated script (such as `load_homepage_to_mongo.js`) outside of the main backend server.
+- This ensures that data import and ETL operations do not interfere with the main application logic or runtime.
+- See the `server/load_homepage_to_mongo.js` script for an example of how to load Excel data into MongoDB.
+- Update and run these scripts as needed for initial data setup or bulk updates.
+
 ## How to Resume Work
 1. **Start the backend server:**
    ```sh
