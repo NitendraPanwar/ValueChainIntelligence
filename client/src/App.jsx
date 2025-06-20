@@ -154,7 +154,7 @@ function App() {
               Object.keys(selected).forEach(key => {
                 if (selected[key]) {
                   const [frameIdx, btnIdx] = key.split('-').map(Number);
-                  if (headers[frameIdx] && headers[frameIdx].trim().toLowerCase() === 'business type') {
+                  if (headers[frameIdx] && headers[frameIdx].trim().toLowerCase() === 'industry') {
                     businessType = frames[frameIdx]?.[btnIdx] || '';
                   }
                 }

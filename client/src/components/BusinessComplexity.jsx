@@ -12,11 +12,11 @@ function BusinessComplexity({
   preselectedBusinessType, // Receive preselectedBusinessType as a prop
   userFlow // receive userFlow as prop
 }) {
-  // Auto-select preselected business type on mount
+  // Auto-select preselected industry on mount
   useEffect(() => {
     if (!preselectedBusinessType) return;
     headers.forEach((header, frameIdx) => {
-      if (header && header.trim().toLowerCase() === 'business type') {
+      if (header && header.trim().toLowerCase() === 'industry') {
         const btnIdx = frames[frameIdx]?.findIndex(val => val === preselectedBusinessType);
         if (btnIdx !== -1 && !selected[`${frameIdx}-${btnIdx}`]) {
           handleButtonClick(frameIdx, btnIdx);
@@ -59,20 +59,20 @@ function BusinessComplexity({
       </div>
       {error && <div style={{ color: 'red', margin: '20px 0' }}>{error}</div>}
       <div className="frames">
-        {/* Four columns: Business Type, Business Complexity, Number of Employees, Annual Revenues (US$) */}
+        {/* Four columns: Industry, Business Complexity, Number of Employees, Annual Revenues (US$) */}
         {frames.slice(0, 4).map((frame, frameIdx) => (
           <div className="frame" key={frameIdx}>
             <h3>{headers[frameIdx] || ''}</h3>
             {frame.map((val, btnIdx) => {
               const key = `${frameIdx}-${btnIdx}`;
               const isSelected = selected[key];
-              // Business Type logic for highlight/disable
-              const isBusinessTypeFrame = headers[frameIdx] && headers[frameIdx].trim().toLowerCase() === 'business type';
+              // Industry logic for highlight/disable
+              const isIndustryFrame = headers[frameIdx] && headers[frameIdx].trim().toLowerCase() === 'industry';
               const isPreselected =
-                isBusinessTypeFrame &&
+                isIndustryFrame &&
                 preselectedBusinessType &&
                 val === preselectedBusinessType;
-              const shouldDisable = isBusinessTypeFrame && preselectedBusinessType;
+              const shouldDisable = isIndustryFrame && preselectedBusinessType;
               return (
                 <button
                   key={btnIdx}

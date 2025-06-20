@@ -1,6 +1,6 @@
 # Value Chain Intelligence App
 
-## Current Progress (as of June 19, 2025)
+## Current Progress (as of June 20, 2025)
 - Modular React app with multi-step wizard flow for value chain, business complexity, capability assessment, and strategic initiative management.
 - Strategic Initiative flow: select value chain entry, select capabilities, check suggestions, and save initiatives with associated suggestions.
 - Suggestions for each capability are displayed as checkboxes; selected suggestions are tracked and saved.
@@ -16,6 +16,8 @@
   - (<valueChainEntryName>)
 - Unused files (e.g., `OldHomePage.jsx`, `BuildingBlocks.jsx`) have been removed for a clean codebase.
 - All navigation flows (add, saved entry, wizard) are working and tested.
+- **MongoDB integration:** Backend now connects to MongoDB Atlas using environment variables in `.env`.
+- **File import endpoint:** Backend supports `/api/upload-xlsx` for Excel file upload and sheet name extraction (UI pending).
 
 ## How to Resume Work
 1. **Start the backend server:**
@@ -37,6 +39,7 @@
 - All user/session data is now passed as props (`name`, `businessType`, `label`) through the flow.
 - ValueChain page saves capability names and star ratings as a nested array in each submission.
 - Strategic Initiative flow saves initiative details and selected suggestions per capability.
+- **Next up:** Implement frontend UI for importing `.xlsx` files and displaying sheet names using `/api/upload-xlsx` endpoint.
 - You can add new features, validations, or UI/UX improvements as needed.
 - Check server logs for debugging submission data.
 - Codebase is modular and clean; all unused files have been removed.

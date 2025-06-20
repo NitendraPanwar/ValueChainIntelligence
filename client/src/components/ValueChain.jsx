@@ -13,13 +13,13 @@ function ValueChain({ selected, frames, headers, onBack, onNextPage, preselected
   const [hoverInfo, setHoverInfo] = useState({ show: false, text: '', x: 0, y: 0 });
   const [starRatings, setStarRatings] = useState({}); // { capabilityName: rating }
 
-  // Compute the business type to highlight: selected or preselected if none selected
+  // Compute the industry to highlight: selected or preselected if none selected
   let selectedBusinessType = '';
   let businessType = '';
   Object.keys(selected).forEach(key => {
     if (selected[key]) {
       const [frameIdx, btnIdx] = key.split('-').map(Number);
-      if (headers[frameIdx] && headers[frameIdx].trim().toLowerCase() === 'business type') {
+      if (headers[frameIdx] && headers[frameIdx].trim().toLowerCase() === 'industry') {
         selectedBusinessType = frames[frameIdx]?.[btnIdx] || '';
         businessType = frames[frameIdx]?.[btnIdx] || '';
       }
@@ -36,7 +36,7 @@ function ValueChain({ selected, frames, headers, onBack, onNextPage, preselected
   // If still no businessType, try to fallback to first available in frames (for robustness)
   if (!businessType && frames && headers) {
     headers.forEach((header, frameIdx) => {
-      if (header && header.trim().toLowerCase() === 'business type') {
+      if (header && header.trim().toLowerCase() === 'industry') {
         if (frames[frameIdx] && frames[frameIdx][0]) {
           businessType = frames[frameIdx][0];
         }
@@ -49,7 +49,7 @@ function ValueChain({ selected, frames, headers, onBack, onNextPage, preselected
     if (typeof onSelectBusinessType === 'function' && businessType) {
       // Find the frameIdx and btnIdx for the current businessType
       headers.forEach((header, frameIdx) => {
-        if (header && header.trim().toLowerCase() === 'business type') {
+        if (header && header.trim().toLowerCase() === 'industry') {
           const btnIdx = frames[frameIdx]?.findIndex(val => val === businessType);
           if (btnIdx !== -1 && btnIdx !== undefined) {
             onSelectBusinessType(frameIdx, btnIdx);
@@ -125,7 +125,7 @@ function ValueChain({ selected, frames, headers, onBack, onNextPage, preselected
             // Find the frameIdx and btnIdx for this item
             let frameIdx = -1, btnIdx = -1;
             headers.forEach((header, fIdx) => {
-              if (header && header.trim().toLowerCase() === 'business type') {
+              if (header && header.trim().toLowerCase() === 'industry') {
                 const bIdx = frames[fIdx]?.findIndex(val => val === item.name);
                 if (bIdx !== -1 && bIdx !== undefined) {
                   frameIdx = fIdx;
@@ -133,7 +133,7 @@ function ValueChain({ selected, frames, headers, onBack, onNextPage, preselected
                 }
               }
             });
-            // Highlight if this is the selected or preselected business type
+            // Highlight if this is the selected or preselected industry
             let isHighlighted = false;
             if (Object.values(selected).some(Boolean)) {
               isHighlighted = selected[`${frameIdx}-${btnIdx}`] === true;

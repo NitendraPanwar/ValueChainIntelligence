@@ -28,7 +28,7 @@ function HomePage({ onOk }) {
         if (!sheet) return;
         const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
         const headerRow = json[0] || [];
-        const businessTypeCol = headerRow.findIndex(h => h && h.toString().trim().toLowerCase() === 'business type');
+        const businessTypeCol = headerRow.findIndex(h => h && h.toString().trim().toLowerCase() === 'industry');
         if (businessTypeCol === -1) return;
         const types = [];
         for (let i = 1; i < json.length; i++) {
@@ -274,7 +274,7 @@ function HomePage({ onOk }) {
                   }} style={{ flex: 1 }} />
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
-                  <label style={{ minWidth: 140, textAlign: 'right', marginRight: 12 }}>Business Type:&nbsp;</label>
+                  <label style={{ minWidth: 140, textAlign: 'right', marginRight: 12 }}>Industry:&nbsp;</label>
                   <select value={selectedBusinessType} onChange={e => setSelectedBusinessType(e.target.value)} style={{ flex: 1 }}>
                     <option value="">Select...</option>
                     {businessTypes.map((type, idx) => (
