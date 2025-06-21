@@ -26,6 +26,20 @@
 - See the `server/load_homepage_to_mongo.js` script for an example of how to load Excel data into MongoDB.
 - Update and run these scripts as needed for initial data setup or bulk updates.
 
+## MongoDB Sheet & Graph Features (2025)
+- The app now supports advanced Excel import, sheet/column selection, and MongoDB integration for data persistence.
+- **Sheet Relations & Graph Layout:**
+  - Visualize Excel sheets as nodes in a graph, create/edit relations (edges) between sheets, and select key/reference columns.
+  - Node positions (graph layout) and all relations can be saved to and loaded from MongoDB.
+  - Manual buttons: "Save Relations to MongoDB", "Load Relations from MongoDB", "Save Graph (MongoDB)", and "Load Graph (MongoDB)".
+  - Validation and copyable modals for all relations and errors.
+- **Persistence:**
+  - All relations and node positions are stored in the `SheetRelations` collection in MongoDB Atlas.
+  - Loading a graph restores both the relations and the exact node layout as last saved.
+- **Debugging:**
+  - Debug logs are printed in the browser console when saving/loading graph data to/from MongoDB.
+- See the `Load Data` page in the app for these features.
+
 ## How to Resume Work
 1. **Start the backend server:**
    ```sh

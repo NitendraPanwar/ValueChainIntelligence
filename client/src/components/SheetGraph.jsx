@@ -20,14 +20,10 @@ export default function SheetGraph({ nodes: initialNodes, edges, onAddRelation, 
   const [editFromColIdx, setEditFromColIdx] = useState('');
   const [editToColIdx, setEditToColIdx] = useState('');
 
-  // Update nodes/edges if props change (but preserve positions)
+  // Update nodes/edges if props change (replace positions when initialNodes changes)
   useEffect(() => {
     setRfEdges(edges);
-    // Only add new nodes if they don't exist, preserve positions
-    setRfNodes(oldNodes => {
-      const oldMap = Object.fromEntries(oldNodes.map(n => [n.id, n]));
-      return initialNodes.map(n => oldMap[n.id] ? { ...n, ...oldMap[n.id] } : n);
-    });
+    setRfNodes(initialNodes); // <-- replace, don't merge
   }, [edges, initialNodes, setRfEdges, setRfNodes]);
 
   // Expose node position changes to parent only when user interacts

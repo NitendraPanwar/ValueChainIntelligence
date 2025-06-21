@@ -482,7 +482,53 @@ function LoadDataPage() {
           >
             Show All Relations
           </button>
-          {relationSaveStatus && <span style={{ marginLeft: 16, color: relationSaveStatus.includes('saved') ? 'green' : 'red' }}>{relationSaveStatus}</span>}
+          <button
+            style={{ padding: '8px 18px', fontWeight: 600, borderRadius: 6, border: '1px solid #13c2c2', background: '#13c2c2', color: '#fff', cursor: 'pointer' }}
+            onClick={async () => {
+              if (sheetNames.length > 0) {
+                const mainSheet = sheetNames[0];
+                try {
+                  // Debug log: show data being sent
+                  console.log('[DEBUG] Saving graph to MongoDB:', {
+                    sheetName: mainSheet,
+                    relations: sheetRelations,
+                    nodePositions: graphNodes
+                  });
+                  await saveSheetRelations(mainSheet, sheetRelations, graphNodes);
+                  setRelationSaveStatus('Graph saved!');
+                  setTimeout(() => setRelationSaveStatus(''), 2000);
+                } catch {
+                  setRelationSaveStatus('Failed to save graph');
+                  setTimeout(() => setRelationSaveStatus(''), 2000);
+                }
+              }
+            }}
+          >
+            Save Graph (MongoDB)
+          </button>
+          <button
+            style={{ padding: '8px 18px', fontWeight: 600, borderRadius: 6, border: '1px solid #eb2f96', background: '#eb2f96', color: '#fff', cursor: 'pointer' }}
+            onClick={async () => {
+              if (sheetNames.length > 0) {
+                const mainSheet = sheetNames[0];
+                try {
+                  const res = await loadSheetRelations(mainSheet);
+                  // Debug log: show data received
+                  console.log('[DEBUG] Loaded graph from MongoDB:', res);
+                  if (res && Array.isArray(res.nodePositions)) setGraphNodes(res.nodePositions);
+                  if (res && Array.isArray(res.relations)) setSheetRelations(res.relations);
+                  setRelationSaveStatus('Graph loaded!');
+                  setTimeout(() => setRelationSaveStatus(''), 2000);
+                } catch {
+                  setRelationSaveStatus('Failed to load graph');
+                  setTimeout(() => setRelationSaveStatus(''), 2000);
+                }
+              }
+            }}
+          >
+            Load Graph (MongoDB)
+          </button>
+          {relationSaveStatus && <span style={{ marginLeft: 16, color: relationSaveStatus.includes('saved') || relationSaveStatus.includes('loaded') ? 'green' : 'red' }}>{relationSaveStatus}</span>}
         </div>
       )}
       {/* Modal for showing all relations */}
@@ -503,7 +549,7 @@ function LoadDataPage() {
       )}
       {sheetNames.length > 0 && (
         <SheetGraph
-          nodes={graphNodes}
+          nodes={graphNodes} // <-- use graphNodes, not nodes
           edges={edges}
           sheetData={sheetData}
           onAddRelation={(fromSheet, toSheet, fromColIdx, toColIdx) => {
