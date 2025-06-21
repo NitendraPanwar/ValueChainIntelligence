@@ -7,6 +7,7 @@ import WizardProgress from './components/WizardProgress';
 import WizardProgressPrototypes from './components/WizardProgressPrototypes';
 import StrategicInitiativePage from './components/StrategicInitiativePage';
 import SelectedCapabilitiesPage from './components/SelectedCapabilitiesPage';
+import LoadDataPage from './components/LoadDataPage';
 import { mutuallyExclusiveHeaders } from './config';
 import './App.css';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
@@ -91,6 +92,7 @@ function App() {
       <Routes>
         <Route path="/prototype" element={<WizardProgressPrototypes />} />
         <Route path="/strategic-initiative/selected-capabilities" element={<SelectedCapabilitiesPage />} />
+        <Route path="/load-data" element={<LoadDataPage />} />
         <Route path="*" element={
           (() => {
             if (page === 'home') {

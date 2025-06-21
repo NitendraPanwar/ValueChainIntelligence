@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import InlineInfoIcon from './InlineInfoIcon';
 import { saveSubmission, getSubmissions } from '../utils/api';
+import { useNavigate } from 'react-router-dom';
 
 function HomePage({ onOk }) {
   const [showAdd, setShowAdd] = useState(false);
@@ -18,6 +19,8 @@ function HomePage({ onOk }) {
   const [selectedValueChainEntry, setSelectedValueChainEntry] = useState('');
   // Info tooltip state
   const [hoverInfo, setHoverInfo] = useState({ show: false, text: '', x: 0, y: 0 });
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetch('/VC_Capability_Master.xlsx')
@@ -83,8 +86,18 @@ function HomePage({ onOk }) {
     }
   }, [showPopup, currentButtonLabel]);
 
+  const showLoadDataButton = import.meta.env.VITE_LOAD_MONGO_DB === 'true' || import.meta.env.VITE_LOAD_MONGO_DB === true;
+
   return (
     <div className="container">
+      {showLoadDataButton && (
+        <button
+          style={{ position: 'fixed', top: 16, left: 16, zIndex: 2000, padding: '8px 18px', fontSize: '1em', fontWeight: 600, borderRadius: 6, border: '1px solid #b6c2d6', background: '#f5f8fa', color: '#222', cursor: 'pointer' }}
+          onClick={() => navigate('/load-data')}
+        >
+          Load Data
+        </button>
+      )}
       <div
         style={{
           position: 'fixed',
