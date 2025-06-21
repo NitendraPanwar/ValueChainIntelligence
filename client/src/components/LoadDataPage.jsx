@@ -276,7 +276,13 @@ function LoadDataPage() {
       const mainSheet = sheetNames[0];
       try {
         const res = await loadSheetRelations(mainSheet);
-        if (res && Array.isArray(res.relations)) setSheetRelations(res.relations);
+        if (res && Array.isArray(res.relations)) {
+          // Only keep relations where both sheets exist in the current import
+          const validRelations = res.relations.filter(rel =>
+            sheetNames.includes(rel.fromSheet) && sheetNames.includes(rel.toSheet)
+          );
+          setSheetRelations(validRelations);
+        }
       } catch (err) {
         // Optionally show error
       }
@@ -406,7 +412,20 @@ function LoadDataPage() {
               <h3>Columns (Drag to select):</h3>
               <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
                 <div style={{ minWidth: 140 }}>
-                  <div style={{ fontWeight: 600, marginBottom: 8 }}>Available Columns</div>
+                  <div style={{ fontWeight: 600, marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>Available Columns</span>
+                    <button
+                      style={{ fontSize: 12, padding: '2px 8px', borderRadius: 4, border: '1px solid #b6c2d6', background: '#e6f7ff', cursor: 'pointer' }}
+                      onClick={() => {
+                        // Add all visible columns not already selected
+                        const allVisible = colNames.filter(col => visibleCols[selectedSheet][col.idx] && !selectedColumns.includes(col.idx)).map(col => col.idx);
+                        setSelectedColumns([...selectedColumns, ...allVisible]);
+                      }}
+                      disabled={colNames.filter(col => visibleCols[selectedSheet][col.idx] && !selectedColumns.includes(col.idx)).length === 0}
+                    >
+                      Add All
+                    </button>
+                  </div>
                   <div style={{ border: '1px solid #b6c2d6', borderRadius: 6, minHeight: 40, padding: 8, background: '#f5f8fa' }}>
                     {colNames.filter(col => visibleCols[selectedSheet][col.idx] && !selectedColumns.includes(col.idx)).map(col => (
                       <div
@@ -515,8 +534,28 @@ function LoadDataPage() {
                   const res = await loadSheetRelations(mainSheet);
                   // Debug log: show data received
                   console.log('[DEBUG] Loaded graph from MongoDB:', res);
-                  if (res && Array.isArray(res.nodePositions)) setGraphNodes(res.nodePositions);
-                  if (res && Array.isArray(res.relations)) setSheetRelations(res.relations);
+                  if (res && Array.isArray(res.nodePositions)) {
+                    // Only keep node positions for sheets that exist in the current import
+                    let validNodes = res.nodePositions.filter(node => sheetNames.includes(node.id));
+                    // Add any missing sheets as nodes with default positions
+                    const missingSheets = sheetNames.filter(sheet => !validNodes.some(node => node.id === sheet));
+                    const defaultY = 100;
+                    const defaultNodes = missingSheets.map((sheet, idx) => ({
+                      id: sheet,
+                      data: { label: sheet },
+                      type: 'default',
+                      position: { x: 100 * idx, y: defaultY }
+                    }));
+                    validNodes = [...validNodes, ...defaultNodes];
+                    setGraphNodes(validNodes);
+                  }
+                  if (res && Array.isArray(res.relations)) {
+                    // Only keep relations where both sheets exist in the current import
+                    const validRelations = res.relations.filter(rel =>
+                      sheetNames.includes(rel.fromSheet) && sheetNames.includes(rel.toSheet)
+                    );
+                    setSheetRelations(validRelations);
+                  }
                   setRelationSaveStatus('Graph loaded!');
                   setTimeout(() => setRelationSaveStatus(''), 2000);
                 } catch {
