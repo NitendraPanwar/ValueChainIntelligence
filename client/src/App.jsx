@@ -11,6 +11,7 @@ import LoadDataPage from './components/LoadDataPage';
 import { mutuallyExclusiveHeaders } from './config';
 import './App.css';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { getHomepageIndustriesFromMongo, getHomepageBusinessComplexityFromMongo } from './utils/mongoApi';
 
 function App() {
   // Use a single page state for clarity
@@ -26,6 +27,7 @@ function App() {
   const [preselectedBusinessType, setPreselectedBusinessType] = useState('');
   const [wizardStep, setWizardStep] = useState(0); // 0: Business Complexity, 1: Value Chain, 2: Business Capabilities, 3: Capability Assessment, 4: Value Chain Ready
   const [userFlow, setUserFlow] = useState({ name: '', businessType: '', label: '' });
+  const [businessComplexityOptions, setBusinessComplexityOptions] = useState([]);
 
   // Navigation helpers
   const goToHome = () => setPage('home');
@@ -35,33 +37,38 @@ function App() {
 
   useEffect(() => {
     if (page !== 'oldHome') return;
-    fetch('/VC_Capability_Master.xlsx')
-      .then((res) => res.arrayBuffer())
-      .then((data) => {
-        import('xlsx').then(XLSX => {
-          const workbook = XLSX.read(data, { type: 'array' });
-          const sheet = workbook.Sheets['Homepage'];
-          if (!sheet) {
-            setError('Homepage sheet not found.');
-            return;
-          }
-          const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-          const columns = json[0]?.length || 0;
-          const headers = json[0] || [];
-          const framesArr = [];
-          for (let col = 0; col < columns; col++) {
-            const frame = [];
-            for (let row = 1; row < json.length; row++) {
-              if (json[row][col]) frame.push(json[row][col]);
-            }
-            framesArr.push(frame);
-          }
-          setFrames(framesArr);
+    // Fetch headers and frames from MongoDB Homepage sheet
+    getHomepageIndustriesFromMongo().then(types => {
+      // We'll need to fetch the full Homepage sheet from MongoDB to get headers and frames
+      getHomepageBusinessComplexityFromMongo().then(bcOptions => {
+        setBusinessComplexityOptions(bcOptions);
+      });
+      // Fetch the full Homepage sheet from MongoDB
+      fetch('/api/mongo/read?sheetName=Homepage')
+        .then(res => res.json())
+        .then(json => {
+          if (!json.success || !Array.isArray(json.data) || json.data.length === 0) return;
+          // Remove id/_id columns from headers
+          const headersRaw = Object.keys(json.data[0]);
+          const headers = headersRaw.filter(h => h.trim().toLowerCase() !== '_id' && h.trim().toLowerCase() !== 'id');
           setHeaders(headers);
+          // Build frames: for each header, collect all unique values (excluding empty and id/_id)
+          const framesArr = headers.map(h => {
+            const vals = json.data.map(row => row[h]).filter(v => v && v.toString().trim() !== '' && v.toString().trim().toLowerCase() !== '_id' && v.toString().trim().toLowerCase() !== 'id');
+            // Only unique values
+            return [...new Set(vals)];
+          });
+          setFrames(framesArr);
           setError('');
         });
-      })
-      .catch(() => setError('Failed to load Excel file.'));
+    });
+  }, [page]);
+
+  useEffect(() => {
+    // Fetch business complexity options from MongoDB when page is oldHome
+    if (page === 'oldHome') {
+      getHomepageBusinessComplexityFromMongo().then(setBusinessComplexityOptions);
+    }
   }, [page]);
 
   const handleButtonClick = (frameIdx, btnIdx) => {
@@ -125,6 +132,7 @@ function App() {
                     setShowValueChain={() => { setPage('valueChain'); setWizardStep(1); }}
                     preselectedBusinessType={preselectedBusinessType}
                     userFlow={userFlow}
+                    businessComplexityOptions={businessComplexityOptions}
                   />
                 </>
               );

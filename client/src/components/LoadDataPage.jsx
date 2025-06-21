@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
-import { pushSheetToMongo, readSheetFromMongo } from '../utils/mongoApi';
+import { pushSheetToMongo, readSheetFromMongo, getValueChainMasterFromMongo, getAllValueChainEntriesFromMongo } from '../utils/mongoApi';
 import { saveSheetRelations, loadSheetRelations } from '../utils/sheetRelationsApi';
 import SheetGraph from './SheetGraph';
 
@@ -21,6 +21,13 @@ function LoadDataPage() {
   const [sheetKeys, setSheetKeys] = useState({}); // { sheetName: keyColIdx }
   const [sheetRelations, setSheetRelations] = useState([]); // [{ fromSheet, fromColIdx, toSheet, toColIdx }]
   const [fileImported, setFileImported] = useState(false);
+  const [allValueChainEntries, setAllValueChainEntries] = useState([]);
+  const [vcLoading, setVcLoading] = useState(false);
+  const [vcError, setVcError] = useState('');
+  const [allUserValueChainEntries, setAllUserValueChainEntries] = useState([]);
+  const [userVcLoading, setUserVcLoading] = useState(false);
+  const [userVcError, setUserVcError] = useState('');
+  const [expandedUserEntryIdx, setExpandedUserEntryIdx] = useState(null);
 
   const handleImport = (e) => {
     setError('');
@@ -143,6 +150,54 @@ function LoadDataPage() {
       setMongoTable([]);
     } finally {
       setMongoLoading(false);
+    }
+  };
+
+  // Handler to fetch all value chain entries from MongoDB
+  const handleShowAllValueChainEntries = async () => {
+    setVcLoading(true);
+    setVcError('');
+    try {
+      const entries = await getValueChainMasterFromMongo();
+      setAllValueChainEntries(entries);
+    } catch (err) {
+      setVcError('Failed to load value chain entries');
+      setAllValueChainEntries([]);
+    } finally {
+      setVcLoading(false);
+    }
+  };
+
+  // Handler to fetch all user-created value chain entries from MongoDB
+  const handleShowAllUserValueChainEntries = async () => {
+    setUserVcLoading(true);
+    setUserVcError('');
+    try {
+      const entries = await getAllValueChainEntriesFromMongo();
+      setAllUserValueChainEntries(entries);
+    } catch (err) {
+      setUserVcError('Failed to load user value chain entries');
+      setAllUserValueChainEntries([]);
+    } finally {
+      setUserVcLoading(false);
+    }
+  };
+
+  // Delete a user value chain entry from MongoDB
+  const handleDeleteUserValueChainEntry = async (entry, idx) => {
+    if (!window.confirm(`Delete value chain entry: ${entry.valueChainEntryName}?`)) return;
+    try {
+      // Call backend API to delete by unique keys
+      const res = await fetch('http://localhost:4000/api/mongo/deleteValueChainEntry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ valueChainEntryName: entry.valueChainEntryName, businessType: entry.businessType, label: entry.label })
+      });
+      if (!res.ok) throw new Error('Failed to delete entry');
+      // Remove from UI list
+      setAllUserValueChainEntries(prev => prev.filter((_, i) => i !== idx));
+    } catch (err) {
+      alert('Delete failed: ' + (err.message || err));
     }
   };
 
@@ -470,7 +525,37 @@ function LoadDataPage() {
             <h3 style={{ marginTop: 0 }}>MongoDB</h3>
             <button style={{ margin: '8px 0', padding: '8px 18px', fontWeight: 600, borderRadius: 6, border: '1px solid #b6c2d6', background: '#e6f7ff', color: '#222', cursor: mongoLoading ? 'wait' : 'pointer', width: '100%' }} onClick={handlePush} disabled={mongoLoading}>Push</button>
             <button style={{ margin: '8px 0', padding: '8px 18px', fontWeight: 600, borderRadius: 6, border: '1px solid #b6c2d6', background: '#e6f7ff', color: '#222', cursor: mongoLoading ? 'wait' : 'pointer', width: '100%' }} onClick={handleRead} disabled={mongoLoading}>Read</button>
+            <button style={{ margin: '8px 0', padding: '8px 18px', fontWeight: 600, borderRadius: 6, border: '1px solid #b6c2d6', background: '#f6ffed', color: '#222', cursor: userVcLoading ? 'wait' : 'pointer', width: '100%' }} onClick={handleShowAllUserValueChainEntries} disabled={userVcLoading}>Show All User Value Chain Entries</button>
             {mongoError && <div style={{ color: mongoError.includes('successful') ? 'green' : 'red', marginTop: 8, fontSize: 13 }}>{mongoError}</div>}
+            {userVcError && <div style={{ color: 'red', marginTop: 8, fontSize: 13 }}>{userVcError}</div>}
+            {allUserValueChainEntries.length > 0 && (
+              <div style={{ marginTop: 12, maxHeight: 200, overflowY: 'auto', width: '100%' }}>
+                <h4 style={{ margin: '8px 0 4px 0', fontSize: 15 }}>All User Value Chain Entries</h4>
+                <ul style={{ paddingLeft: 16, fontSize: 14 }}>
+                  {allUserValueChainEntries.map((entry, idx) => (
+                    <li key={idx} style={{ marginBottom: 4 }}>
+                      <span
+                        style={{ cursor: 'pointer', color: '#1890ff', textDecoration: 'underline' }}
+                        onClick={() => setExpandedUserEntryIdx(expandedUserEntryIdx === idx ? null : idx)}
+                        title="Click to show/hide details"
+                      >
+                        <b>{entry.valueChainEntryName}</b>{entry.businessType ? ' (' + entry.businessType + ')' : ''}
+                      </span>
+                      <button
+                        style={{ marginLeft: 8, color: '#fff', background: '#d4380d', border: 'none', borderRadius: 4, padding: '2px 8px', cursor: 'pointer', fontSize: 12 }}
+                        onClick={() => handleDeleteUserValueChainEntry(entry, idx)}
+                        title="Delete this entry"
+                      >Delete</button>
+                      {expandedUserEntryIdx === idx && (
+                        <pre style={{ background: '#f4f4f4', padding: 8, borderRadius: 6, marginTop: 4, fontSize: 12, maxWidth: 320, overflowX: 'auto' }}>
+                          {JSON.stringify(entry, null, 2)}
+                        </pre>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         </div>
       )}

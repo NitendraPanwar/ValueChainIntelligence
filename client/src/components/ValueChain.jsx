@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import * as XLSX from 'xlsx';
 import StarRating from './StarRating';
 import InlineInfoIcon from './InlineInfoIcon';
 import { saveSubmission } from '../utils/api';
+import { getValueChainMasterFromMongo } from '../utils/mongoApi';
 
 function ValueChain({ selected, frames, headers, onBack, onNextPage, preselectedBusinessType, onSelectBusinessType, userFlow }) {
   const [vcName, setVcName] = useState([]);
@@ -62,51 +62,20 @@ function ValueChain({ selected, frames, headers, onBack, onNextPage, preselected
   }, [businessType]);
 
   useEffect(() => {
-    if (!businessType) {
-      setVcName([]);
-      setCapabilitiesByFrame({});
-      setLoading(false);
-      return;
-    }
     setLoading(true);
     setError('');
-    fetch('/VC_Capability_Master.xlsx')
-      .then(res => res.arrayBuffer())
-      .then(data => {
-        const workbook = XLSX.read(data, { type: 'array' });
-        const sheet = workbook.Sheets['Value Chain Master'];
-        if (!sheet) {
-          setError('Value Chain Master sheet not found.');
-          setLoading(false);
-          return;
-        }
-        const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-        const headerRow = json[0] || [];
-        const valueChainCol = headerRow.findIndex(h => h && h.toString().trim().toLowerCase() === 'value chain');
-        const nameCol = headerRow.findIndex(h => h && h.toString().trim().toLowerCase() === 'name');
-        const descCol = headerRow.findIndex(h => h && h.toString().trim().toLowerCase() === 'description');
-        if (valueChainCol === -1 || nameCol === -1 || descCol === -1) {
-          setError('Required columns not found in Value Chain Master. Columns found: ' + JSON.stringify(headerRow));
-          setLoading(false);
-          return;
-        }
-        const found = [];
-        for (let i = 1; i < json.length; i++) {
-          if (json[i][valueChainCol] && json[i][valueChainCol].toString().trim() === businessType) {
-            found.push({
-              name: json[i][nameCol] || '',
-              description: json[i][descCol] || ''
-            });
-          }
-        }
+    // Fetch all value chain master data from MongoDB (no filter)
+    getValueChainMasterFromMongo()
+      .then(found => {
+        console.log('[DEBUG] Loaded value chain data from MongoDB:', found);
         setVcName(found);
         setLoading(false);
       })
       .catch(() => {
-        setError('Failed to load Value Chain Master sheet.');
+        setError('Failed to load Value Chain Master data from MongoDB.');
         setLoading(false);
       });
-  }, [businessType, frames, headers, selected]);
+  }, [frames, headers, selected]);
 
   return (
     <div className="container">
@@ -126,7 +95,7 @@ function ValueChain({ selected, frames, headers, onBack, onNextPage, preselected
             let frameIdx = -1, btnIdx = -1;
             headers.forEach((header, fIdx) => {
               if (header && header.trim().toLowerCase() === 'industry') {
-                const bIdx = frames[fIdx]?.findIndex(val => val === item.name);
+                const bIdx = frames[fIdx]?.findIndex(val => val === item.valueChain);
                 if (bIdx !== -1 && bIdx !== undefined) {
                   frameIdx = fIdx;
                   btnIdx = bIdx;
@@ -137,7 +106,7 @@ function ValueChain({ selected, frames, headers, onBack, onNextPage, preselected
             let isHighlighted = false;
             if (Object.values(selected).some(Boolean)) {
               isHighlighted = selected[`${frameIdx}-${btnIdx}`] === true;
-            } else if (preselectedBusinessType && item.name === preselectedBusinessType) {
+            } else if (preselectedBusinessType && item.valueChain === preselectedBusinessType) {
               isHighlighted = true;
             }
             return (
@@ -149,7 +118,7 @@ function ValueChain({ selected, frames, headers, onBack, onNextPage, preselected
                       style={{ width: '100%', marginBottom: 8, background: isHighlighted ? '#4caf50' : undefined, color: isHighlighted ? '#fff' : undefined }}
                       disabled
                     >
-                      {item.name}
+                      {item.valueChain}
                       <span style={{ position: 'absolute', right: 2, bottom: 10 }}>
                         <InlineInfoIcon
                           onMouseEnter={e => {
@@ -163,7 +132,7 @@ function ValueChain({ selected, frames, headers, onBack, onNextPage, preselected
                     </button>
                   </div>
                 </div>
-                <StarRating maxStars={4} rating={starRatings[item.name] || 0} onChange={r => setStarRatings(prev => ({ ...prev, [item.name]: r }))} />
+                <StarRating maxStars={4} rating={starRatings[item.valueChain] || 0} onChange={r => setStarRatings(prev => ({ ...prev, [item.valueChain]: r }))} />
               </div>
             );
           })
@@ -216,7 +185,7 @@ function ValueChain({ selected, frames, headers, onBack, onNextPage, preselected
       <button className="lets-go-btn" onClick={onBack}>Back</button>
       <button className="lets-go-btn" style={{ marginLeft: 16 }} onClick={async () => {
         // Save value chain names and star ratings as ValueChain array
-        const valueChainArr = vcName.map(item => ({ Name: item.name, StarRating: starRatings[item.name] || 0 }));
+        const valueChainArr = vcName.map(item => ({ Name: item.valueChain, StarRating: starRatings[item.valueChain] || 0 }));
         await saveSubmission({
           ...userFlow,
           ValueChain: valueChainArr

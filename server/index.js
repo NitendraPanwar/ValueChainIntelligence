@@ -13,7 +13,7 @@ app.use(cors());
 app.use(express.json());
 
 // Save submission
-app.post('/api/save', (req, res) => {
+app.post('/api/save', async (req, res) => {
   console.log('Received submission:', JSON.stringify(req.body, null, 2));
   const { name, businessType, label, businessComplexity, annualRevenues } = req.body;
   if (!name || !businessType) {
@@ -25,24 +25,32 @@ app.post('/api/save', (req, res) => {
   }
   // Check for duplicate
   const exists = submissions.some(
-    s => s.name === name && s.businessType === businessType && s.label === label
+    s => (s.valueChainEntryName || s.name) === name && s.businessType === businessType && s.label === label
   );
   if (!exists) {
-    submissions.push({
-      name,
+    const newEntry = {
+      valueChainEntryName: name, // renamed field
       businessType,
       label,
       timestamp: new Date().toISOString(),
       "Business Complexity": businessComplexity,
       "Annual Revenues (US$)": annualRevenues,
       ValueChain: [] // Initialize as empty array
-    });
+    };
+    submissions.push(newEntry);
     fs.writeFileSync(DATA_FILE, JSON.stringify(submissions, null, 2));
+    // Save to MongoDB as well
+    try {
+      const db = await getDb();
+      await db.collection('Submissions').insertOne(newEntry);
+    } catch (err) {
+      console.error('MongoDB save error:', err);
+    }
     return res.json({ success: true, message: 'Saved.' });
   } else {
     // If duplicate, update the existing entry with new values
     submissions = submissions.map(s => {
-      if (s.name === name && s.businessType === businessType && s.label === label) {
+      if ((s.valueChainEntryName || s.name) === name && s.businessType === businessType && s.label === label) {
         const updated = { ...s };
         if (businessComplexity !== undefined) updated["Business Complexity"] = businessComplexity;
         if (annualRevenues !== undefined) updated["Annual Revenues (US$)"] = annualRevenues;
@@ -51,6 +59,19 @@ app.post('/api/save', (req, res) => {
           console.log('Saving ValueChain:', JSON.stringify(req.body.ValueChain, null, 2));
         }
         updated.timestamp = new Date().toISOString();
+        // Also update in MongoDB
+        (async () => {
+          try {
+            const db = await getDb();
+            await db.collection('Submissions').updateOne(
+              { valueChainEntryName: name, businessType, label },
+              { $set: updated },
+              { upsert: true }
+            );
+          } catch (err) {
+            console.error('MongoDB update error:', err);
+          }
+        })();
         return updated;
       }
       return s;
@@ -227,6 +248,32 @@ app.get('/api/mongo/sheet-relations', async (req, res) => {
   } catch (err) {
     console.error('MongoDB sheet-relations load error:', err);
     res.status(500).json({ error: 'Failed to load sheet relations.' });
+  }
+});
+
+// Delete a user value chain entry from MongoDB (and optionally from JSON file)
+app.post('/api/mongo/deleteValueChainEntry', async (req, res) => {
+  const { valueChainEntryName, businessType, label } = req.body;
+  if (!valueChainEntryName || !businessType || !label) {
+    return res.status(400).json({ error: 'Missing required fields.' });
+  }
+  try {
+    // Delete from MongoDB
+    const db = await getDb();
+    const result = await db.collection('Submissions').deleteOne({ valueChainEntryName, businessType, label });
+    // Optionally, also delete from submissions.json
+    if (fs.existsSync(DATA_FILE)) {
+      let submissions = JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
+      submissions = submissions.filter(s => !(s.valueChainEntryName === valueChainEntryName && s.businessType === businessType && s.label === label));
+      fs.writeFileSync(DATA_FILE, JSON.stringify(submissions, null, 2));
+    }
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: 'Entry not found.' });
+    }
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Delete value chain entry error:', err);
+    res.status(500).json({ error: 'Failed to delete entry.' });
   }
 });
 

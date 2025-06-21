@@ -10,7 +10,8 @@ function BusinessComplexity({
   handleButtonClick,
   setShowValueChain,
   preselectedBusinessType, // Receive preselectedBusinessType as a prop
-  userFlow // receive userFlow as prop
+  userFlow, // receive userFlow as prop
+  businessComplexityOptions = [] // <-- pass from parent
 }) {
   // Auto-select preselected industry on mount
   useEffect(() => {
@@ -25,7 +26,7 @@ function BusinessComplexity({
     });
     // Only run on mount or when preselectedBusinessType changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [preselectedBusinessType]);
+  }, [preselectedBusinessType, headers, frames]);
 
   // Helper to get selected value for a header
   const getSelectedValue = (headerName) => {
@@ -37,6 +38,7 @@ function BusinessComplexity({
     return frames[idx]?.[btnNum] || '';
   };
 
+  // Render frames, but use businessComplexityOptions for the Business Complexity frame
   return (
     <div className="container">
       {/* Fixed header and subheader */}
@@ -60,33 +62,45 @@ function BusinessComplexity({
       {error && <div style={{ color: 'red', margin: '20px 0' }}>{error}</div>}
       <div className="frames">
         {/* Four columns: Industry, Business Complexity, Number of Employees, Annual Revenues (US$) */}
-        {frames.slice(0, 4).map((frame, frameIdx) => (
-          <div className="frame" key={frameIdx}>
-            <h3>{headers[frameIdx] || ''}</h3>
-            {frame.map((val, btnIdx) => {
-              const key = `${frameIdx}-${btnIdx}`;
-              const isSelected = selected[key];
-              // Industry logic for highlight/disable
-              const isIndustryFrame = headers[frameIdx] && headers[frameIdx].trim().toLowerCase() === 'industry';
-              const isPreselected =
-                isIndustryFrame &&
-                preselectedBusinessType &&
-                val === preselectedBusinessType;
-              const shouldDisable = isIndustryFrame && preselectedBusinessType;
-              return (
-                <button
-                  key={btnIdx}
-                  className={`frame-btn${(isSelected || isPreselected) ? ' selected' : ''}`}
-                  style={(isSelected || isPreselected) ? { background: '#25BE3B', color: '#111', border: '1px solid #fff' } : {}}
-                  disabled={shouldDisable}
-                  onClick={() => handleButtonClick(frameIdx, btnIdx)}
-                >
-                  {val}
-                </button>
-              );
-            })}
-          </div>
-        ))}
+        {frames.slice(0, 4).map((frame, frameIdx) => {
+          let frameData = frame;
+          if (headers[frameIdx] && headers[frameIdx].trim().toLowerCase() === 'business complexity' && businessComplexityOptions.length > 0) {
+            frameData = businessComplexityOptions;
+          }
+          // Filter out MongoDB id columns from frameData
+          frameData = frameData.filter(val => {
+            if (!val) return false;
+            if (typeof val === 'string' && (val.trim().toLowerCase() === '_id' || val.trim().toLowerCase() === 'id')) return false;
+            return true;
+          });
+          return (
+            <div className="frame" key={frameIdx}>
+              <h3>{headers[frameIdx] || ''}</h3>
+              {frameData.map((val, btnIdx) => {
+                const key = `${frameIdx}-${btnIdx}`;
+                const isSelected = selected[key];
+                // Industry logic for highlight/disable
+                const isIndustryFrame = headers[frameIdx] && headers[frameIdx].trim().toLowerCase() === 'industry';
+                const isPreselected =
+                  isIndustryFrame &&
+                  preselectedBusinessType &&
+                  val === preselectedBusinessType;
+                const shouldDisable = isIndustryFrame && preselectedBusinessType;
+                return (
+                  <button
+                    key={btnIdx}
+                    className={`frame-btn${(isSelected || isPreselected) ? ' selected' : ''}`}
+                    style={(isSelected || isPreselected) ? { background: '#25BE3B', color: '#111', border: '1px solid #fff' } : {}}
+                    disabled={shouldDisable}
+                    onClick={() => handleButtonClick(frameIdx, btnIdx)}
+                  >
+                    {val}
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })}
       </div>
       <button className="lets-go-btn" onClick={async () => {
         // Save/update submission with Business Complexity and Annual Revenues
