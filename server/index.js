@@ -1,7 +1,9 @@
+require('dotenv').config();
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
+const { getDb } = require('./mongo');
 
 const app = express();
 const PORT = 4000;
@@ -148,6 +150,84 @@ app.get('/api/submissions', (req, res) => {
   if (!fs.existsSync(DATA_FILE)) return res.json([]);
   const submissions = JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
   res.json(submissions);
+});
+
+// Push sheet data to MongoDB (replace all previous data for the sheet)
+app.post('/api/mongo/push', async (req, res) => {
+  try {
+    const { sheetName, data } = req.body;
+    if (!sheetName || !Array.isArray(data)) {
+      return res.status(400).json({ error: 'sheetName and data[] are required.' });
+    }
+    const db = await getDb();
+    const collection = db.collection(sheetName);
+    // Delete all previous data for this sheet
+    await collection.deleteMany({});
+    // Insert new data
+    if (data.length > 0) {
+      await collection.insertMany(data);
+    }
+    res.json({ success: true, message: 'Data replaced for sheet: ' + sheetName });
+  } catch (err) {
+    console.error('MongoDB push error:', err);
+    res.status(500).json({ error: 'Failed to push data to MongoDB.' });
+  }
+});
+
+// Read sheet data from MongoDB
+app.get('/api/mongo/read', async (req, res) => {
+  try {
+    const sheetName = req.query.sheetName;
+    if (!sheetName) {
+      return res.status(400).json({ error: 'sheetName is required.' });
+    }
+    const db = await getDb();
+    const collection = db.collection(sheetName);
+    const data = await collection.find({}).toArray();
+    res.json({ success: true, data });
+  } catch (err) {
+    console.error('MongoDB read error:', err);
+    res.status(500).json({ error: 'Failed to read data from MongoDB.' });
+  }
+});
+
+// Save or update sheet relations and node positions for a given sheetName
+app.post('/api/mongo/sheet-relations', async (req, res) => {
+  try {
+    const { sheetName, relations, nodePositions } = req.body;
+    if (!sheetName || !Array.isArray(relations)) {
+      return res.status(400).json({ error: 'sheetName and relations[] are required.' });
+    }
+    const db = await getDb();
+    const collection = db.collection('SheetRelations');
+    // Upsert by sheetName
+    await collection.updateOne(
+      { sheetName },
+      { $set: { relations, nodePositions: nodePositions || [] } },
+      { upsert: true }
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error('MongoDB sheet-relations save error:', err);
+    res.status(500).json({ error: 'Failed to save sheet relations.' });
+  }
+});
+
+// Load sheet relations and node positions for a given sheetName
+app.get('/api/mongo/sheet-relations', async (req, res) => {
+  try {
+    const sheetName = req.query.sheetName;
+    if (!sheetName) {
+      return res.status(400).json({ error: 'sheetName is required.' });
+    }
+    const db = await getDb();
+    const collection = db.collection('SheetRelations');
+    const doc = await collection.findOne({ sheetName });
+    res.json(doc ? { relations: doc.relations, nodePositions: doc.nodePositions || [] } : { relations: [], nodePositions: [] });
+  } catch (err) {
+    console.error('MongoDB sheet-relations load error:', err);
+    res.status(500).json({ error: 'Failed to load sheet relations.' });
+  }
 });
 
 app.listen(PORT, () => {

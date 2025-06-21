@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import InlineInfoIcon from './InlineInfoIcon';
 import { saveSubmission, getSubmissions } from '../utils/api';
+import { useNavigate } from 'react-router-dom';
 
 function HomePage({ onOk }) {
   const [showAdd, setShowAdd] = useState(false);
@@ -19,6 +20,8 @@ function HomePage({ onOk }) {
   // Info tooltip state
   const [hoverInfo, setHoverInfo] = useState({ show: false, text: '', x: 0, y: 0 });
 
+  const navigate = useNavigate();
+
   useEffect(() => {
     fetch('/VC_Capability_Master.xlsx')
       .then(res => res.arrayBuffer())
@@ -28,7 +31,7 @@ function HomePage({ onOk }) {
         if (!sheet) return;
         const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
         const headerRow = json[0] || [];
-        const businessTypeCol = headerRow.findIndex(h => h && h.toString().trim().toLowerCase() === 'business type');
+        const businessTypeCol = headerRow.findIndex(h => h && h.toString().trim().toLowerCase() === 'industry');
         if (businessTypeCol === -1) return;
         const types = [];
         for (let i = 1; i < json.length; i++) {
@@ -83,8 +86,18 @@ function HomePage({ onOk }) {
     }
   }, [showPopup, currentButtonLabel]);
 
+  const showLoadDataButton = import.meta.env.VITE_LOAD_MONGO_DB === 'true' || import.meta.env.VITE_LOAD_MONGO_DB === true;
+
   return (
     <div className="container">
+      {showLoadDataButton && (
+        <button
+          style={{ position: 'fixed', top: 16, left: 16, zIndex: 2000, padding: '8px 18px', fontSize: '1em', fontWeight: 600, borderRadius: 6, border: '1px solid #b6c2d6', background: '#f5f8fa', color: '#222', cursor: 'pointer' }}
+          onClick={() => navigate('/load-data')}
+        >
+          Load Data
+        </button>
+      )}
       <div
         style={{
           position: 'fixed',
@@ -274,7 +287,7 @@ function HomePage({ onOk }) {
                   }} style={{ flex: 1 }} />
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
-                  <label style={{ minWidth: 140, textAlign: 'right', marginRight: 12 }}>Business Type:&nbsp;</label>
+                  <label style={{ minWidth: 140, textAlign: 'right', marginRight: 12 }}>Industry:&nbsp;</label>
                   <select value={selectedBusinessType} onChange={e => setSelectedBusinessType(e.target.value)} style={{ flex: 1 }}>
                     <option value="">Select...</option>
                     {businessTypes.map((type, idx) => (

@@ -1,6 +1,6 @@
 # Value Chain Intelligence App
 
-## Current Progress (as of June 19, 2025)
+## Current Progress (as of June 20, 2025)
 - Modular React app with multi-step wizard flow for value chain, business complexity, capability assessment, and strategic initiative management.
 - Strategic Initiative flow: select value chain entry, select capabilities, check suggestions, and save initiatives with associated suggestions.
 - Suggestions for each capability are displayed as checkboxes; selected suggestions are tracked and saved.
@@ -16,6 +16,29 @@
   - (<valueChainEntryName>)
 - Unused files (e.g., `OldHomePage.jsx`, `BuildingBlocks.jsx`) have been removed for a clean codebase.
 - All navigation flows (add, saved entry, wizard) are working and tested.
+- **MongoDB integration:** Backend now connects to MongoDB Atlas using environment variables in `.env`.
+- **File import endpoint:** Backend supports `/api/upload-xlsx` for Excel file upload and sheet name extraction (UI pending).
+
+## MongoDB Data Load (Keep Separate)
+- **Note:** The scripts and logic for loading data into MongoDB (e.g., from Excel files) are kept separate from the main project codebase.
+- To load data into MongoDB, use a dedicated script (such as `load_homepage_to_mongo.js`) outside of the main backend server.
+- This ensures that data import and ETL operations do not interfere with the main application logic or runtime.
+- See the `server/load_homepage_to_mongo.js` script for an example of how to load Excel data into MongoDB.
+- Update and run these scripts as needed for initial data setup or bulk updates.
+
+## MongoDB Sheet & Graph Features (2025)
+- The app now supports advanced Excel import, sheet/column selection, and MongoDB integration for data persistence.
+- **Sheet Relations & Graph Layout:**
+  - Visualize Excel sheets as nodes in a graph, create/edit relations (edges) between sheets, and select key/reference columns.
+  - Node positions (graph layout) and all relations can be saved to and loaded from MongoDB.
+  - Manual buttons: "Save Relations to MongoDB", "Load Relations from MongoDB", "Save Graph (MongoDB)", and "Load Graph (MongoDB)".
+  - Validation and copyable modals for all relations and errors.
+- **Persistence:**
+  - All relations and node positions are stored in the `SheetRelations` collection in MongoDB Atlas.
+  - Loading a graph restores both the relations and the exact node layout as last saved.
+- **Debugging:**
+  - Debug logs are printed in the browser console when saving/loading graph data to/from MongoDB.
+- See the `Load Data` page in the app for these features.
 
 ## How to Resume Work
 1. **Start the backend server:**
@@ -37,6 +60,7 @@
 - All user/session data is now passed as props (`name`, `businessType`, `label`) through the flow.
 - ValueChain page saves capability names and star ratings as a nested array in each submission.
 - Strategic Initiative flow saves initiative details and selected suggestions per capability.
+- **Next up:** Implement frontend UI for importing `.xlsx` files and displaying sheet names using `/api/upload-xlsx` endpoint.
 - You can add new features, validations, or UI/UX improvements as needed.
 - Check server logs for debugging submission data.
 - Codebase is modular and clean; all unused files have been removed.
