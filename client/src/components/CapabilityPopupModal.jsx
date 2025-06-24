@@ -51,6 +51,7 @@ function CapabilityPopupModal({
             <CapabilityMaturityAssessment
               valueChainName={popupInfo.frameName}
               capabilityName={popupInfo.capName}
+              valueChainId={popupInfo.valueChainId} // Pass valueChainId for persistence
               user={userFlow}
               onSaveSuccess={() => {
                 setPopupInfo({ show: false, text: '' });

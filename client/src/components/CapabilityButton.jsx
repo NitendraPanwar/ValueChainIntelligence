@@ -17,9 +17,9 @@ function CapabilityButton({
   const capKey = cap.name.toString().trim().toLowerCase();
   const maturity = capabilityMaturity[`${vcKey}||${capKey}`];
   let color = '#bbb';
-  if (maturity === '1' || maturity === 1) color = 'red';
-  else if (maturity === '2' || maturity === 2) color = 'orange';
-  else if (maturity === '3' || maturity === 3) color = 'green';
+  if (maturity === 'Low') color = 'red';
+  else if (maturity === 'Medium') color = 'orange';
+  else if (maturity === 'High') color = 'green';
 
   // Determine if this capability is selected
   const isChecked = !!(selectedCapabilities && selectedCapabilities.some(c => c.name === cap.name && c.frame === frameName));

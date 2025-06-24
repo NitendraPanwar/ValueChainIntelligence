@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
-import { pushSheetToMongo, readSheetFromMongo, getValueChainMasterFromMongo, getAllValueChainEntriesFromMongo } from '../utils/mongoApi';
+import { pushSheetToMongo, readSheetFromMongo, getValueChainMasterFromMongo } from '../utils/mongoApi';
+import { getAllValueChainEntries, deleteValueChainEntry } from '../utils/api';
+import { getValueChainsByEntryId } from '../utils/api.valuechains';
 import { saveSheetRelations, loadSheetRelations } from '../utils/sheetRelationsApi';
 import SheetGraph from './SheetGraph';
 
@@ -28,6 +30,10 @@ function LoadDataPage() {
   const [userVcLoading, setUserVcLoading] = useState(false);
   const [userVcError, setUserVcError] = useState('');
   const [expandedUserEntryIdx, setExpandedUserEntryIdx] = useState(null);
+  const [expandedVcEntryIdx, setExpandedVcEntryIdx] = useState(null);
+  // State for expanded value chains for each entry
+  const [expandedValueChains, setExpandedValueChains] = useState({}); // { entryId: [valueChains] }
+  const [loadingValueChains, setLoadingValueChains] = useState({}); // { entryId: boolean }
 
   const handleImport = (e) => {
     setError('');
@@ -153,33 +159,36 @@ function LoadDataPage() {
     }
   };
 
-  // Handler to fetch all value chain entries from MongoDB
+  // Handler to fetch all value chain entries from the new ValueChainEntries collection
   const handleShowAllValueChainEntries = async () => {
     setVcLoading(true);
     setVcError('');
     try {
-      const entries = await getValueChainMasterFromMongo();
+      const entries = await getAllValueChainEntries();
       setAllValueChainEntries(entries);
     } catch (err) {
-      setVcError('Failed to load value chain entries');
-      setAllValueChainEntries([]);
+      setVcError('Failed to load Value Chain Entries');
     } finally {
       setVcLoading(false);
     }
   };
 
-  // Handler to fetch all user-created value chain entries from MongoDB
-  const handleShowAllUserValueChainEntries = async () => {
-    setUserVcLoading(true);
-    setUserVcError('');
+  // Show/hide linked value chains for a ValueChainEntry
+  const handleShowValueChainsForEntry = async (entryId) => {
+    setLoadingValueChains(prev => ({ ...prev, [entryId]: true }));
+    if (expandedValueChains[entryId]) {
+      // Hide if already expanded
+      setExpandedValueChains(prev => ({ ...prev, [entryId]: null }));
+      setLoadingValueChains(prev => ({ ...prev, [entryId]: false }));
+      return;
+    }
     try {
-      const entries = await getAllValueChainEntriesFromMongo();
-      setAllUserValueChainEntries(entries);
+      const valueChains = await getValueChainsByEntryId(entryId);
+      setExpandedValueChains(prev => ({ ...prev, [entryId]: valueChains }));
     } catch (err) {
-      setUserVcError('Failed to load user value chain entries');
-      setAllUserValueChainEntries([]);
+      setExpandedValueChains(prev => ({ ...prev, [entryId]: 'error' }));
     } finally {
-      setUserVcLoading(false);
+      setLoadingValueChains(prev => ({ ...prev, [entryId]: false }));
     }
   };
 
@@ -196,6 +205,18 @@ function LoadDataPage() {
       if (!res.ok) throw new Error('Failed to delete entry');
       // Remove from UI list
       setAllUserValueChainEntries(prev => prev.filter((_, i) => i !== idx));
+    } catch (err) {
+      alert('Delete failed: ' + (err.message || err));
+    }
+  };
+
+  // Delete a value chain entry from the new ValueChainEntries collection
+  const handleDeleteValueChainEntry = async (entry, idx) => {
+    if (!window.confirm(`Delete value chain entry: ${entry.name}?`)) return;
+    try {
+      const res = await deleteValueChainEntry(entry._id);
+      if (!res.success) throw new Error(res.error || 'Failed to delete entry');
+      setAllValueChainEntries(prev => prev.filter((_, i) => i !== idx));
     } catch (err) {
       alert('Delete failed: ' + (err.message || err));
     }
@@ -400,6 +421,28 @@ function LoadDataPage() {
     }).join('\n');
   };
 
+  // State for showing all value chains modal
+  const [showAllValueChainsModal, setShowAllValueChainsModal] = useState({ open: false, entry: null });
+  const [allValueChains, setAllValueChains] = useState([]);
+  const [allValueChainsLoading, setAllValueChainsLoading] = useState(false);
+  const [allValueChainsError, setAllValueChainsError] = useState('');
+
+  // Handler to show all value chains in a modal
+  const handleShowAllValueChains = async (entry) => {
+    setAllValueChainsLoading(true);
+    setAllValueChainsError('');
+    setShowAllValueChainsModal({ open: true, entry });
+    try {
+      const vcs = await import('../utils/api.valuechains').then(mod => mod.getAllValueChains());
+      setAllValueChains(vcs);
+    } catch (err) {
+      setAllValueChainsError('Failed to load all value chains');
+      setAllValueChains([]);
+    } finally {
+      setAllValueChainsLoading(false);
+    }
+  };
+
   return (
     <div style={{ padding: 32 }}>
       <button
@@ -525,7 +568,39 @@ function LoadDataPage() {
             <h3 style={{ marginTop: 0 }}>MongoDB</h3>
             <button style={{ margin: '8px 0', padding: '8px 18px', fontWeight: 600, borderRadius: 6, border: '1px solid #b6c2d6', background: '#e6f7ff', color: '#222', cursor: mongoLoading ? 'wait' : 'pointer', width: '100%' }} onClick={handlePush} disabled={mongoLoading}>Push</button>
             <button style={{ margin: '8px 0', padding: '8px 18px', fontWeight: 600, borderRadius: 6, border: '1px solid #b6c2d6', background: '#e6f7ff', color: '#222', cursor: mongoLoading ? 'wait' : 'pointer', width: '100%' }} onClick={handleRead} disabled={mongoLoading}>Read</button>
-            <button style={{ margin: '8px 0', padding: '8px 18px', fontWeight: 600, borderRadius: 6, border: '1px solid #b6c2d6', background: '#f6ffed', color: '#222', cursor: userVcLoading ? 'wait' : 'pointer', width: '100%' }} onClick={handleShowAllUserValueChainEntries} disabled={userVcLoading}>Show All User Value Chain Entries</button>
+            <button style={{ margin: '8px 0', padding: '8px 18px', fontWeight: 600, borderRadius: 6, border: '1px solid #13c2c2', background: '#13c2c2', color: '#fff', cursor: 'pointer', width: '100%' }} onClick={handleShowAllValueChainEntries}>
+              Show All Value Chain Entries
+            </button>
+            {vcLoading && <div style={{ color: '#1890ff', marginTop: 8, fontSize: 13 }}>Loading...</div>}
+            {vcError && <div style={{ color: 'red', marginTop: 8, fontSize: 13 }}>{vcError}</div>}
+            {allValueChainEntries.length > 0 && (
+              <div style={{ marginTop: 12, maxHeight: 200, overflowY: 'auto', width: '100%' }}>
+                <h4 style={{ margin: '8px 0 4px 0', fontSize: 15 }}>All Value Chain Entries</h4>
+                <ul style={{ paddingLeft: 16, fontSize: 14 }}>
+                  {allValueChainEntries.map((entry, idx) => (
+                    <li key={idx} style={{ marginBottom: 4 }}>
+                      <span
+                        style={{ cursor: 'pointer', color: '#1890ff', textDecoration: 'underline' }}
+                        onClick={() => setExpandedVcEntryIdx(expandedVcEntryIdx === idx ? null : idx)}
+                        title="Click to show/hide details"
+                      >
+                        <b>{entry.name}</b>{entry.businessType ? ' (' + entry.businessType + ')' : ''}
+                      </span>
+                      <button
+                        style={{ marginLeft: 8, color: '#fff', background: '#d4380d', border: 'none', borderRadius: 4, padding: '2px 8px', cursor: 'pointer', fontSize: 12 }}
+                        onClick={() => handleDeleteValueChainEntry(entry, idx)}
+                        title="Delete this entry"
+                      >Delete</button>
+                      {expandedVcEntryIdx === idx && (
+                        <pre style={{ background: '#f4f4f4', padding: 8, borderRadius: 6, marginTop: 4, fontSize: 12, maxWidth: 320, overflowX: 'auto' }}>
+                          {JSON.stringify(entry, null, 2)}
+                        </pre>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             {mongoError && <div style={{ color: mongoError.includes('successful') ? 'green' : 'red', marginTop: 8, fontSize: 13 }}>{mongoError}</div>}
             {userVcError && <div style={{ color: 'red', marginTop: 8, fontSize: 13 }}>{userVcError}</div>}
             {allUserValueChainEntries.length > 0 && (
@@ -671,6 +746,28 @@ function LoadDataPage() {
           </div>
         </div>
       )}
+      {/* Modal for showing all value chains */}
+      {showAllValueChainsModal.open && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(30,40,60,0.5)', zIndex: 3200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: '#fff', borderRadius: 8, padding: 32, minWidth: 400, boxShadow: '0 2px 16px #0002', maxWidth: 600 }}>
+            <h3>All Value Chains</h3>
+            {allValueChainsLoading && <div>Loading...</div>}
+            {allValueChainsError && <div style={{ color: 'red' }}>{allValueChainsError}</div>}
+            {!allValueChainsLoading && !allValueChainsError && (
+              <ul style={{ maxHeight: 300, overflowY: 'auto', paddingLeft: 18 }}>
+                {allValueChains.map((vc, idx) => (
+                  <li key={vc._id || idx}>
+                    {vc.Name || vc.name}
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
+              <button onClick={() => setShowAllValueChainsModal({ open: false, entry: null })} style={{ padding: '6px 18px', borderRadius: 4, border: '1px solid #722ed1', background: '#722ed1', color: '#fff', cursor: 'pointer' }}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
       {sheetNames.length > 0 && (
         <SheetGraph
           nodes={graphNodes} // <-- use graphNodes, not nodes
@@ -765,6 +862,73 @@ function LoadDataPage() {
           </div>
         </div>
       )}
+      {/* Show all Value Chain Entries */}
+      <div style={{ marginTop: 32 }}>
+        <button
+          style={{ padding: '8px 18px', fontWeight: 600, borderRadius: 6, border: '1px solid #722ed1', background: '#722ed1', color: '#fff', cursor: 'pointer' }}
+          onClick={handleShowAllValueChainEntries}
+        >
+          Show All Value Chain Entries
+        </button>
+        {vcLoading && <span style={{ marginLeft: 16 }}>Loading...</span>}
+        {vcError && <div style={{ color: 'red', marginTop: 8 }}>{vcError}</div>}
+        {allValueChainEntries.length > 0 && (
+          <div style={{ marginTop: 16 }}>
+            <h3>All Value Chain Entries</h3>
+            <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+              <thead>
+                <tr>
+                  {Object.keys(allValueChainEntries[0]).map((col, idx) => (
+                    <th key={idx} style={{ border: '1px solid #b6c2d6', padding: '4px 10px', background: '#e6f7ff', fontWeight: 600 }}>{col}</th>
+                  ))}
+                  <th style={{ border: '1px solid #b6c2d6', padding: '4px 10px', background: '#e6f7ff', fontWeight: 600 }}>Linked Value Chains</th>
+                  <th style={{ border: '1px solid #b6c2d6', padding: '4px 10px', background: '#e6f7ff', fontWeight: 600 }}>All Value Chains</th>
+                </tr>
+              </thead>
+              <tbody>
+                {allValueChainEntries.map((entry, idx) => (
+                  <tr key={entry._id || idx}>
+                    {Object.keys(allValueChainEntries[0]).map((col, cidx) => (
+                      <td key={cidx} style={{ border: '1px solid #b6c2d6', padding: '4px 10px', background: '#fff' }}>{entry[col]}</td>
+                    ))}
+                    <td style={{ border: '1px solid #b6c2d6', padding: '4px 10px', background: '#fff' }}>
+                      <button
+                        style={{ fontSize: 12, padding: '2px 8px', borderRadius: 4, border: '1px solid #1890ff', background: '#e6f7ff', cursor: 'pointer' }}
+                        onClick={() => handleShowValueChainsForEntry(entry._id)}
+                        disabled={loadingValueChains[entry._id]}
+                      >
+                        {expandedValueChains[entry._id] ? 'Hide' : 'Show'}
+                      </button>
+                      {loadingValueChains[entry._id] && <span style={{ marginLeft: 8 }}>Loading...</span>}
+                      {expandedValueChains[entry._id] && Array.isArray(expandedValueChains[entry._id]) && (
+                        <div style={{ marginTop: 8 }}>
+                          <strong>Linked Value Chains:</strong>
+                          <ul style={{ margin: 0, paddingLeft: 18 }}>
+                            {expandedValueChains[entry._id].map((vc, vidx) => (
+                              <li key={vidx}>
+                                {vc.Name} (Stars: {vc.StarRating})
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {expandedValueChains[entry._id] === 'error' && <div style={{ color: 'red' }}>Failed to load value chains</div>}
+                    </td>
+                    <td style={{ border: '1px solid #b6c2d6', padding: '4px 10px', background: '#fff' }}>
+                      <button
+                        style={{ fontSize: 12, padding: '2px 8px', borderRadius: 4, border: '1px solid #722ed1', background: '#f9f0ff', cursor: 'pointer' }}
+                        onClick={() => handleShowAllValueChains(entry)}
+                      >
+                        Show All Value Chains
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

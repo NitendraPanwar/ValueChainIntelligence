@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import StarRating from './StarRating';
 import InlineInfoIcon from './InlineInfoIcon';
-import { saveSubmission } from '../utils/api';
+import { saveSubmission, saveValueChains } from '../utils/api';
 import { getValueChainMasterFromMongo } from '../utils/mongoApi';
 
-function ValueChain({ selected, frames, headers, onBack, onNextPage, preselectedBusinessType, onSelectBusinessType, userFlow }) {
+function ValueChain({ selected, frames, headers, onBack, onNextPage, preselectedBusinessType, onSelectBusinessType, userFlow, onSetValueChainName, entryId, entryName }) {
   const [vcName, setVcName] = useState([]);
   const [capabilitiesByFrame, setCapabilitiesByFrame] = useState({});
   const [capMaturity, setCapMaturity] = useState({});
@@ -186,11 +186,22 @@ function ValueChain({ selected, frames, headers, onBack, onNextPage, preselected
       <button className="lets-go-btn" style={{ marginLeft: 16 }} onClick={async () => {
         // Save value chain names and star ratings as ValueChain array
         const valueChainArr = vcName.map(item => ({ Name: item.valueChain, StarRating: starRatings[item.valueChain] || 0 }));
-        await saveSubmission({
-          ...userFlow,
-          ValueChain: valueChainArr
-        });
-        onNextPage();
+        // Pass all value chains (not just the first) to userFlow
+        if (onSetValueChainName && vcName.length > 0) {
+          onSetValueChainName(vcName.map(item => item.valueChain));
+        }
+        // Use new API: save value chains with parent entryId and entryName
+        if (entryId) {
+          try {
+            await saveValueChains({ entryId, entryName, valueChains: valueChainArr });
+            onNextPage();
+          } catch (err) {
+            alert('Failed to save value chains. Please try again.');
+            console.error('Error saving value chains:', err);
+          }
+        } else {
+          alert('Missing ValueChainEntry ID. Please restart the flow.');
+        }
       }}>
         Next
       </button>

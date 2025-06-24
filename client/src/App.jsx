@@ -8,14 +8,16 @@ import WizardProgressPrototypes from './components/WizardProgressPrototypes';
 import StrategicInitiativePage from './components/StrategicInitiativePage';
 import SelectedCapabilitiesPage from './components/SelectedCapabilitiesPage';
 import LoadDataPage from './components/LoadDataPage';
+import ReadDataPage from './components/ReadDataPage';
 import { mutuallyExclusiveHeaders } from './config';
 import './App.css';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { getHomepageIndustriesFromMongo, getHomepageBusinessComplexityFromMongo } from './utils/mongoApi';
+import { getValueChainsByEntryId } from './utils/api.valuechains';
 
 function App() {
   // Use a single page state for clarity
-  const [page, setPage] = useState('home'); // 'home', 'oldHome', 'valueChain', 'thirdPage'
+  const [page, setPage] = useState('home'); // 'home', 'oldHome', 'valueChain', 'businessCapabilities'
   const [frames, setFrames] = useState([]);
   const [headers, setHeaders] = useState([]);
   const [error, setError] = useState('');
@@ -28,12 +30,15 @@ function App() {
   const [wizardStep, setWizardStep] = useState(0); // 0: Business Complexity, 1: Value Chain, 2: Business Capabilities, 3: Capability Assessment, 4: Value Chain Ready
   const [userFlow, setUserFlow] = useState({ name: '', businessType: '', label: '' });
   const [businessComplexityOptions, setBusinessComplexityOptions] = useState([]);
+  const [entryId, setEntryId] = useState(null);
+  const [valueChainIds, setValueChainIds] = useState([]);
+  const [valueChainNames, setValueChainNames] = useState([]);
 
   // Navigation helpers
   const goToHome = () => setPage('home');
   const goToOldHome = () => setPage('oldHome');
   const goToValueChain = () => setPage('valueChain');
-  const goToThirdPage = () => setPage('thirdPage');
+  const goToBusinessCapabilities = () => setPage('businessCapabilities');
 
   useEffect(() => {
     if (page !== 'oldHome') return;
@@ -94,24 +99,53 @@ function App() {
     }
   };
 
+  // Handler to set valueChainName in userFlow
+  const handleSetValueChainName = (valueChainName) => {
+    setUserFlow(prev => ({ ...prev, valueChainName }));
+  };
+
+  useEffect(() => {
+    // Fetch value chains for the selected entry when entering businessCapabilities page
+    if (page === 'businessCapabilities' && entryId) {
+      getValueChainsByEntryId(entryId)
+        .then((chains) => {
+          if (Array.isArray(chains)) {
+            setValueChainIds(chains.map(vc => vc._id));
+            setValueChainNames(chains.map(vc => vc.Name || vc.name));
+          } else if (chains && typeof chains === 'object') {
+            // In case API returns a single object
+            setValueChainIds([chains._id]);
+            setValueChainNames([chains.Name || chains.name]);
+          } else {
+            setValueChainIds([]);
+            setValueChainNames([]);
+          }
+        })
+        .catch(() => {
+          setValueChainIds([]);
+          setValueChainNames([]);
+        });
+    }
+  }, [page, entryId]);
+
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/prototype" element={<WizardProgressPrototypes />} />
         <Route path="/strategic-initiative/selected-capabilities" element={<SelectedCapabilitiesPage />} />
         <Route path="/load-data" element={<LoadDataPage />} />
+        <Route path="/Read-Data" element={<ReadDataPage />} />
         <Route path="*" element={
           (() => {
             if (page === 'home') {
               return <HomePage onOk={(selectedType, name, label, directToBlocks) => {
-                // Removed debug log for navigation
-                setUserFlow({ name, businessType: selectedType, label });
+                setUserFlow({ name, businessType: selectedType, label, valueChainName: name });
                 setPreselectedBusinessType(selectedType);
                 setWizardStep(0);
                 if (label === 'Strategic Initiative' && directToBlocks) {
                   setPage('strategicInitiative');
                 } else if (directToBlocks) {
-                  setTimeout(() => setPage('thirdPage'), 0);
+                  setTimeout(() => setPage('businessCapabilities'), 0);
                 } else {
                   goToOldHome();
                 }
@@ -129,7 +163,7 @@ function App() {
                     error={error}
                     selected={selected}
                     handleButtonClick={handleButtonClick}
-                    setShowValueChain={() => { setPage('valueChain'); setWizardStep(1); }}
+                    setShowValueChain={(_id) => { setEntryId(_id); setPage('valueChain'); setWizardStep(1); }}
                     preselectedBusinessType={preselectedBusinessType}
                     userFlow={userFlow}
                     businessComplexityOptions={businessComplexityOptions}
@@ -152,14 +186,17 @@ function App() {
                     frames={frames}
                     headers={headers}
                     onBack={() => { setPage('oldHome'); setWizardStep(0); }}
-                    onNextPage={() => { setPage('thirdPage'); setWizardStep(2); }}
+                    onNextPage={() => { setPage('businessCapabilities'); setWizardStep(2); }}
                     preselectedBusinessType={preselectedBusinessType}
                     userFlow={userFlow}
+                    onSetValueChainName={handleSetValueChainName}
+                    entryId={entryId}
+                    entryName={userFlow.name}
                   />
                 </>
               );
             }
-            if (page === 'thirdPage') {
+            if (page === 'businessCapabilities') {
               let businessType = '';
               Object.keys(selected).forEach(key => {
                 if (selected[key]) {
@@ -173,7 +210,7 @@ function App() {
               if (preselectedBusinessType) {
                 businessType = preselectedBusinessType;
               }
-              // Removed debug log for businessType
+              // Pass valueChainIds and valueChainNames arrays to BusinessCapabilities
               return (
                 <>
                   <div style={{ height: 90 }} />
@@ -186,6 +223,9 @@ function App() {
                     }}
                     userFlow={userFlow}
                     filterMaturityOnly={false}
+                    entryId={entryId}
+                    valueChainIds={valueChainIds}
+                    valueChainNames={valueChainNames}
                   />
                 </>
               );
@@ -200,10 +240,12 @@ function App() {
                     onNext={() => { setWizardStep(4); setPage('ready'); }}
                     onBack={() => {
                       setWizardStep(2);
-                      setPage('thirdPage');
+                      setPage('businessCapabilities');
                     }}
                     userFlow={userFlow}
                     filterMaturityOnly={true}
+                    entryId={entryId}
+                    valueChainId={entryId} // <-- Pass valueChainId explicitly
                   />
                 </>
               );

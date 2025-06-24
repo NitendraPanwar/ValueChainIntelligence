@@ -1,4 +1,5 @@
 // mongo.js - MongoDB connection utility
+require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
 const { MongoClient } = require('mongodb');
 
 const uri = process.env.MONGO_URL;

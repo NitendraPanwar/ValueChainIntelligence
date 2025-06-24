@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import * as XLSX from 'xlsx';
 import InlineInfoIcon from './InlineInfoIcon';
 import ExpandedCapabilityView from './ExpandedCapabilityView';
 import CapabilityMaturityAssessment from './CapabilityMaturityAssessment';
-import { getSubmissions } from '../utils/api';
+import { getSubmissions, persistCapability } from '../utils/api';
+import { getValueChainsByEntryId, getCapabilitiesByValueChainId } from '../utils/api.valuechains';
 import CapabilityButton from './CapabilityButton';
 import FrameSection from './FrameSection';
 import CapabilityPopupModal from './CapabilityPopupModal';
 import { useValueChainData } from '../utils/useValueChainData';
 
-function BusinessCapabilities({ businessType, onNext, userFlow, filterMaturityOnly, onBack, showCheckboxInFilteredView, onCapabilitySelect, selectedCapabilities }) {
+function BusinessCapabilities({ businessType, onNext, userFlow, filterMaturityOnly, onBack, showCheckboxInFilteredView, onCapabilitySelect, selectedCapabilities, entryId, valueChainId, valueChainIds = [], valueChainNames = [] }) {
+  // Use valueChainNames (array) and businessType for MongoDB query if provided, else fallback to userFlow.valueChainName
+  const effectiveValueChainNames = valueChainNames.length > 0 ? valueChainNames : [userFlow.valueChainName || userFlow.name];
+  const effectiveValueChainIds = valueChainIds.length > 0 ? valueChainIds : (valueChainId ? [valueChainId] : []);
+  // Pass the full array to useValueChainData, not just the first element
+  const { frames, capabilitiesByFrame, loading, error } = useValueChainData(effectiveValueChainNames, businessType);
   // State for frames/capabilities
-  const { frames, capabilitiesByFrame, loading, error } = useValueChainData(businessType);
   const [checked, setChecked] = useState({}); // { capName: true }
   const [hoverInfo, setHoverInfo] = useState({ show: false, text: '', x: 0, y: 0 });
   const [popupInfo, setPopupInfo] = useState({ show: false, text: '', x: 0, y: 0 });
@@ -29,24 +33,74 @@ function BusinessCapabilities({ businessType, onNext, userFlow, filterMaturityOn
         s.label === userFlow.label
       );
       const capMaturity = {};
+      // Helper to normalize names for key matching
+      function normalizeName(name) {
+        return name
+          ? name.toString().trim().toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ')
+          : '';
+      }
+      // Helper to recursively collect all capabilities
+      function collectCapabilities(vc, vcName) {
+        if (vc.Capability && Array.isArray(vc.Capability)) {
+          vc.Capability.forEach(cap => {
+            if (cap.Name) {
+              const vcKey = normalizeName(vcName || vc.Name || '');
+              const capKey = normalizeName(cap.Name || '');
+              if (cap['Maturity Level']) capMaturity[`${vcKey}||${capKey}`] = cap['Maturity Level'];
+              if (cap['Business Maturity']) capMaturity[`${vcKey}||${capKey}|business`] = cap['Business Maturity'];
+              if (cap['Technology Maturity']) capMaturity[`${vcKey}||${capKey}|technology`] = cap['Technology Maturity'];
+            }
+            // Recursively collect nested capabilities
+            if (cap.Capability && Array.isArray(cap.Capability)) {
+              collectCapabilities(cap, vcName || vc.Name);
+            }
+          });
+        }
+      }
       if (sub && sub.ValueChain && Array.isArray(sub.ValueChain)) {
         sub.ValueChain.forEach(vc => {
-          if (vc.Capability && Array.isArray(vc.Capability)) {
-            vc.Capability.forEach(cap => {
-              if (cap.Name) {
-                const vcKey = (vc.Name || '').toString().trim().toLowerCase();
-                const capKey = (cap.Name || '').toString().trim().toLowerCase();
-                if (cap['Maturity Level']) capMaturity[`${vcKey}||${capKey}`] = cap['Maturity Level'];
-                if (cap['Business Maturity']) capMaturity[`${vcKey}||${capKey}|business`] = cap['Business Maturity'];
-                if (cap['Technology Maturity']) capMaturity[`${vcKey}||${capKey}|technology`] = cap['Technology Maturity'];
-              }
-            });
-          }
+          collectCapabilities(vc, vc.Name);
         });
       }
       setCapabilityMaturity(capMaturity);
     });
   }, [businessType, popupInfo, userFlow]);
+
+  // Persist all capabilities (name only) for each value chain (frame) on load
+  useEffect(() => {
+    if (!entryId || effectiveValueChainIds.length === 0) return;
+    // To avoid duplicate capability names for the same valueChainId and entryId
+    const persisted = new Set();
+    frames.forEach((frame, idx) => {
+      // Use valueChainIds and valueChainNames arrays for all frames (assume 1:1 order)
+      const currentValueChainId = effectiveValueChainIds[idx] || effectiveValueChainIds[0];
+      const currentValueChainName = valueChainNames[idx] || valueChainNames[0];
+      const caps = capabilitiesByFrame[frame.name] || [];
+      caps.forEach(cap => {
+        if (cap && cap.name && currentValueChainId) {
+          const key = `${currentValueChainId}||${entryId}||${cap.name.trim().toLowerCase()}`;
+          if (!persisted.has(key)) {
+            persisted.add(key);
+            persistCapability({
+              valueChainId: currentValueChainId,
+              valueChainName: currentValueChainName,
+              entryId,
+              entryName: userFlow.name,
+              name: cap.name,
+              valueChainEntryId: entryId,
+              valueChainEntryName: userFlow.name
+            })
+              .then(res => {
+                // Handle response if needed
+              })
+              .catch(err => {
+                // Handle error if needed
+              });
+          }
+        }
+      });
+    });
+  }, [frames, capabilitiesByFrame, entryId, valueChainId, valueChainIds, valueChainNames, userFlow.name]);
 
   // Filter capabilities if filterMaturityOnly is true
   const filteredCapabilitiesByFrame = React.useMemo(() => {
@@ -55,8 +109,8 @@ function BusinessCapabilities({ businessType, onNext, userFlow, filterMaturityOn
     const filtered = {};
     Object.entries(capabilitiesByFrame).forEach(([frame, caps]) => {
       filtered[frame] = caps.filter(cap => {
-        const vcKey = frame.toString().trim().toLowerCase();
-        const capKey = cap.name.toString().trim().toLowerCase();
+        const vcKey = normalizeName(frame.toString());
+        const capKey = normalizeName(cap.name.toString());
         return capabilityMaturity[`${vcKey}||${capKey}`];
       });
     });
@@ -65,6 +119,17 @@ function BusinessCapabilities({ businessType, onNext, userFlow, filterMaturityOn
 
   // Show back button if filterMaturityOnly is true
   const showBackButton = !!filterMaturityOnly;
+
+  // Ensure each frame has valueChainId and valueChainName
+  const framesWithIds = frames.map((frame, idx) => ({
+    ...frame,
+    valueChainId: frame.valueChainId || frame._id || effectiveValueChainIds[idx] || effectiveValueChainIds[0],
+    valueChainName: frame.valueChainName || effectiveValueChainNames[idx] || effectiveValueChainNames[0],
+  }));
+
+  if (!valueChainIds.length || !valueChainNames.length) {
+    return <div style={{padding: 40, textAlign: 'center', fontSize: 22}}>Loading value chains...</div>;
+  }
 
   return (
     <div className="container">
@@ -156,7 +221,7 @@ function BusinessCapabilities({ businessType, onNext, userFlow, filterMaturityOn
       <div className="third-page-content" style={{ maxWidth: '100%', margin: 0, borderRadius: 0, padding: 0, fontSize: '1em', color: '#222', boxShadow: 'none', background: 'transparent' }}>
         <div style={{ margin: '32px 0' }}>
           <div className="frames horizontal-scroll" style={{width: '100%', maxWidth: '100vw', justifyContent: 'flex-start'}}>
-            {frames.filter(Boolean).map((item, idx) => (
+            {framesWithIds.filter(Boolean).map((item, idx) => (
               item && item.name && Array.isArray(filteredCapabilitiesByFrame[item.name]) && (
                 <FrameSection
                   key={idx}
@@ -165,7 +230,10 @@ function BusinessCapabilities({ businessType, onNext, userFlow, filterMaturityOn
                   displayMode={displayMode}
                   capabilityMaturity={capabilityMaturity}
                   popupInfo={popupInfo}
-                  setPopupInfo={setPopupInfo}
+                  setPopupInfo={(info) => {
+                    // Attach valueChainId and valueChainName to popupInfo when opening popup
+                    setPopupInfo({ ...info, valueChainId: item.valueChainId, valueChainName: item.valueChainName });
+                  }}
                   setHoverInfo={setHoverInfo}
                   setIsExpanded={setIsExpanded}
                   setShowAssessment={setShowAssessment}
@@ -177,18 +245,7 @@ function BusinessCapabilities({ businessType, onNext, userFlow, filterMaturityOn
             ))}
           </div>
         </div>
-        <div className="third-page-actions" style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', gap: 32, marginTop: 24 }}>
-          {showBackButton && (
-            <button
-              className="lets-go-btn"
-              style={{ minWidth: 120, background: '#fff', color: '#2b5cb8', border: '1.5px solid #2b5cb8', fontWeight: 700, marginRight: 120 }}
-              onClick={onBack}
-            >
-              &larr; Back
-            </button>
-          )}
-          <button className="lets-go-btn" onClick={onNext}>Next</button>
-        </div>
+        {/* ...existing code... */}
       </div>
       <CapabilityPopupModal
         popupInfo={popupInfo}
@@ -198,6 +255,7 @@ function BusinessCapabilities({ businessType, onNext, userFlow, filterMaturityOn
         setIsExpanded={setIsExpanded}
         setShowAssessment={setShowAssessment}
         userFlow={userFlow}
+        entryId={entryId} // Pass entryId for completeness
       />
     </div>
   );

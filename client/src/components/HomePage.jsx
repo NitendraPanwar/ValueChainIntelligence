@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import InlineInfoIcon from './InlineInfoIcon';
 import { saveSubmission, getSubmissions } from '../utils/api';
 import { getHomepageIndustriesFromMongo, getHomepageBusinessComplexityFromMongo, getValueChainMasterFromMongo } from '../utils/mongoApi';
+import { getAllValueChainEntries } from '../utils/api.valuechainentries';
 import { useNavigate } from 'react-router-dom';
 
 function HomePage({ onOk }) {
@@ -19,6 +20,7 @@ function HomePage({ onOk }) {
   const [selectedValueChainEntry, setSelectedValueChainEntry] = useState('');
   const [businessComplexityOptions, setBusinessComplexityOptions] = useState([]);
   const [valueChainMasterEntries, setValueChainMasterEntries] = useState([]); // For Strategic Initiative dropdown (from MongoDB)
+  const [allValueChainEntries, setAllValueChainEntries] = useState([]); // For Value Chain button
   // Info tooltip state
   const [hoverInfo, setHoverInfo] = useState({ show: false, text: '', x: 0, y: 0 });
 
@@ -51,6 +53,22 @@ function HomePage({ onOk }) {
       });
     }
   }, [showPopup, currentButtonLabel]);
+
+  useEffect(() => {
+    // Fetch all value chain entries when 'Value chain' button is clicked
+    if (showAdd && currentButtonLabel === 'Value chain') {
+      getAllValueChainEntries().then(entries => {
+        setAllValueChainEntries(entries);
+      });
+    }
+  }, [showAdd, currentButtonLabel]);
+
+  // Debug: Log allValueChainEntries to verify fetch and structure
+  useEffect(() => {
+    if (showAdd && currentButtonLabel === 'Value chain') {
+      console.log('Fetched allValueChainEntries:', allValueChainEntries);
+    }
+  }, [allValueChainEntries, showAdd, currentButtonLabel]);
 
   const showLoadDataButton = import.meta.env.VITE_LOAD_MONGO_DB === 'true' || import.meta.env.VITE_LOAD_MONGO_DB === true;
 
@@ -187,7 +205,22 @@ function HomePage({ onOk }) {
                 </>
               )}
             </button>
-          ))
+          )),
+          // Show all ValueChainEntries as buttons when 'Value chain' is clicked
+          ...(currentButtonLabel === 'Value chain' ? allValueChainEntries.filter(e => e.name).map((entry, idx) => (
+            <button
+              key={entry._id || idx}
+              className="frame-btn"
+              style={{ width: 240, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
+              onClick={() => {
+                setSelectedEntry(null);
+                onOk(entry.businessType, entry.name, 'Value chain', true);
+              }}
+            >
+              <span>{entry.name}</span>
+              <span style={{ fontSize: 14, color: '#666', marginTop: 4 }}>({entry.businessType})</span>
+            </button>
+          )) : [])
         ];
         // Pad with empty columns if fewer than 4
         while (allButtons.length < 4) {
@@ -220,14 +253,11 @@ function HomePage({ onOk }) {
                   <select value={selectedValueChainEntry} onChange={e => setSelectedValueChainEntry(e.target.value)} style={{ flex: 1 }}>
                     <option value="">Select...</option>
                     {valueChainMasterEntries.map((entry, idx) => {
-                      // Exclude MongoDB key/id columns (e.g., _id)
-                      if (idx === 0 && (entry._id || entry.id)) return null;
-                      // Only show if valueChain or valueChainEntryName exists
-                      const value = entry.valueChain || entry.valueChainEntryName;
-                      if (!value) return null;
+                      // Only show if valueChainEntryName exists (frame name)
+                      if (!entry.valueChainEntryName) return null;
                       return (
-                        <option key={idx} value={value}>
-                          {value}{entry.description ? ` - ${entry.description}` : ''}
+                        <option key={idx} value={entry.valueChainEntryName}>
+                          {entry.valueChainEntryName}{entry.description ? ` - ${entry.description}` : ''}
                         </option>
                       );
                     })}
@@ -237,11 +267,11 @@ function HomePage({ onOk }) {
                   <button
                     className="frame-btn"
                     onClick={() => {
-                      const entry = valueChainMasterEntries.find(e => (e.valueChain || e.valueChainEntryName) === selectedValueChainEntry);
+                      const entry = valueChainMasterEntries.find(e => e.valueChainEntryName === selectedValueChainEntry);
                       setShowPopup(false);
                       setShowAdd(false);
                       if (entry) {
-                        onOk('', entry.valueChain || entry.valueChainEntryName, 'Strategic Initiative', true);
+                        onOk('', entry.valueChainEntryName, 'Strategic Initiative', true);
                       }
                     }}
                     disabled={!selectedValueChainEntry}
@@ -274,7 +304,7 @@ function HomePage({ onOk }) {
                   <button
                     className="frame-btn"
                     onClick={async () => {
-                      await saveSubmission({ name: valueChainName, businessType: selectedBusinessType, label: currentButtonLabel });
+                      // await saveSubmission({ name: valueChainName, businessType: selectedBusinessType, label: currentButtonLabel });
                       setShowPopup(false);
                       setShowAdd(false);
                       onOk(selectedBusinessType, valueChainName, currentButtonLabel);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { saveCapabilityAssessment } from '../utils/api';
-import { getMaturityLevels, lookupMaturityLevel } from '../utils/maturityLevels';
+import { persistCapability } from '../utils/api';
+import { getMaturityLevelsFromMongo, lookupMaturityLevelLabel, getAllMaturityDescriptionsFromMongo } from '../utils/mongoApi';
 
 const cardStyle = {
   background: '#f7f8fa',
@@ -18,7 +18,7 @@ const cardStyle = {
   boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
 };
 
-const CapabilityMaturityAssessment = ({ valueChainName, capabilityName, user, onSaveSuccess }) => {
+const CapabilityMaturityAssessment = ({ valueChainName, capabilityName, valueChainId, capabilityId, user, onSaveSuccess }) => {
   const [businessOwner, setBusinessOwner] = useState('');
   const [techOwner, setTechOwner] = useState('');
   const [businessMaturity, setBusinessMaturity] = useState('');
@@ -28,48 +28,65 @@ const CapabilityMaturityAssessment = ({ valueChainName, capabilityName, user, on
   const [technologyMaturityLevels, setTechnologyMaturityLevels] = useState([]);
   const [mapping, setMapping] = useState([]);
   const [maturityLevel, setMaturityLevel] = useState('');
+  const [businessMaturityDescription, setBusinessMaturityDescription] = useState('');
+  const [technologyMaturityDescription, setTechnologyMaturityDescription] = useState('');
+  const [maturityDescriptions, setMaturityDescriptions] = useState({ business: {}, technology: {} });
 
   useEffect(() => {
-    getMaturityLevels().then(levels => {
+    getMaturityLevelsFromMongo().then(levels => {
       setBusinessMaturityLevels(levels.business);
       setTechnologyMaturityLevels(levels.technology);
       setMapping(levels.mapping);
     });
+    getAllMaturityDescriptionsFromMongo().then(setMaturityDescriptions);
   }, []);
 
   useEffect(() => {
-    const level = lookupMaturityLevel(mapping, businessMaturity, techMaturity);
+    const level = lookupMaturityLevelLabel(mapping, businessMaturity, techMaturity);
     setMaturityLevel(level);
-    // Removed debug log
   }, [businessMaturity, techMaturity, mapping]);
 
+  useEffect(() => {
+    if (businessMaturity && maturityDescriptions.business) {
+      setBusinessMaturityDescription(maturityDescriptions.business[businessMaturity] || '');
+    } else {
+      setBusinessMaturityDescription('');
+    }
+  }, [businessMaturity, maturityDescriptions]);
+
+  useEffect(() => {
+    if (techMaturity && maturityDescriptions.technology) {
+      setTechnologyMaturityDescription(maturityDescriptions.technology[techMaturity] || '');
+    } else {
+      setTechnologyMaturityDescription('');
+    }
+  }, [techMaturity, maturityDescriptions]);
+
   const handleSave = async () => {
-    if (!user?.name || !user?.businessType || !user?.label) {
-      setStatus('Missing user/session info.');
+    if (!valueChainId || !capabilityName) {
+      setStatus('Missing valueChainId or capabilityName.');
       return;
     }
     if (!businessMaturity || !techMaturity) {
       setStatus('Please select both maturity levels.');
       return;
     }
-    const assessment = {
-      'Business Maturity': businessMaturity,
-      'Technology Maturity': techMaturity,
-      'Business Owner': businessOwner,
-      'Technology Owner': techOwner,
-      'Maturity Level': maturityLevel
-    };
     const payload = {
-      name: user.name,
-      businessType: user.businessType,
-      label: user.label,
+      valueChainId,
       valueChainName,
-      capabilityName,
-      assessment
+      entryId: valueChainId, // If you have entryId prop, use it instead
+      entryName: valueChainName, // If you have entryName prop, use it instead
+      name: capabilityName,
+      businessMaturity,
+      technologyMaturity: techMaturity,
+      maturityLevel,
+      businessOwner,
+      techOwner,
     };
+    console.log('Persisting capability with payload:', payload);
     try {
-      const res = await saveCapabilityAssessment(payload);
-      if (res.ok) {
+      const res = await persistCapability(payload);
+      if (res.ok || res.status === 200 || res.success) {
         setStatus('Saved!');
         if (onSaveSuccess) onSaveSuccess();
       } else {
@@ -104,6 +121,9 @@ const CapabilityMaturityAssessment = ({ valueChainName, capabilityName, user, on
               <option key={level} value={level}>{level}</option>
             ))}
           </select>
+          {businessMaturityDescription && (
+            <div style={{ color: '#555', fontSize: 14, marginTop: 4 }}>{businessMaturityDescription}</div>
+          )}
         </div>
         <div style={cardStyle}>
           <div style={{ fontWeight: 600, marginBottom: 8 }}>Technology Maturity</div>
@@ -117,6 +137,9 @@ const CapabilityMaturityAssessment = ({ valueChainName, capabilityName, user, on
               <option key={level} value={level}>{level}</option>
             ))}
           </select>
+          {technologyMaturityDescription && (
+            <div style={{ color: '#555', fontSize: 14, marginTop: 4 }}>{technologyMaturityDescription}</div>
+          )}
         </div>
       </div>
       {/* Row 3: Capability Ownership */}
