@@ -1,6 +1,13 @@
 import React from 'react';
 import InlineInfoIcon from './InlineInfoIcon';
 
+// Helper to normalize names for key matching (copied from BusinessCapabilities)
+function normalizeName(name) {
+  return name
+    ? name.toString().trim().toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ')
+    : '';
+}
+
 function CapabilityButton({
   cap,
   frameName,
@@ -13,9 +20,10 @@ function CapabilityButton({
   onCapabilitySelect,
   selectedCapabilities
 }) {
-  const vcKey = frameName.toString().trim().toLowerCase();
-  const capKey = cap.name.toString().trim().toLowerCase();
+  const vcKey = normalizeName(frameName);
+  const capKey = normalizeName(cap.name);
   const maturity = capabilityMaturity[`${vcKey}||${capKey}`];
+  console.log('CapabilityButton maturity debug:', { vcKey, capKey, maturity, capabilityMaturity });
   let color = '#bbb';
   if (maturity === 'Low') color = 'red';
   else if (maturity === 'Medium') color = 'orange';

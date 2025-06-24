@@ -106,3 +106,10 @@ export async function updateCapabilityMaturity(payload) {
     body: JSON.stringify(payload)
   });
 }
+
+// Fetch all capabilities for a valueChainEntryId (entryId)
+export async function getCapabilitiesByEntryId(entryId) {
+  const res = await fetch(`/api/capabilities?valueChainEntryId=${encodeURIComponent(entryId)}`);
+  if (!res.ok) throw new Error('Failed to fetch capabilities by entryId');
+  return res.json();
+}

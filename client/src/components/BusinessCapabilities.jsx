@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import InlineInfoIcon from './InlineInfoIcon';
 import ExpandedCapabilityView from './ExpandedCapabilityView';
 import CapabilityMaturityAssessment from './CapabilityMaturityAssessment';
-import { getSubmissions, persistCapability } from '../utils/api';
+import { persistCapability, getCapabilitiesByEntryId } from '../utils/api';
 import { getValueChainsByEntryId, getCapabilitiesByValueChainId } from '../utils/api.valuechains';
 import CapabilityButton from './CapabilityButton';
 import FrameSection from './FrameSection';
@@ -24,47 +24,28 @@ function BusinessCapabilities({ businessType, onNext, userFlow, filterMaturityOn
   const [capabilityMaturity, setCapabilityMaturity] = useState({}); // { capName: maturityLevel }
   const [displayMode, setDisplayMode] = useState('capability'); // 'capability' | 'business' | 'technology'
 
+  // Load capability maturity from MongoDB by entryId
   useEffect(() => {
-    getSubmissions().then(subs => {
-      // Only use the submission that matches the current userFlow (name, businessType, label)
-      const sub = subs.find(s =>
-        s.name === userFlow.name &&
-        s.businessType === userFlow.businessType &&
-        s.label === userFlow.label
-      );
-      const capMaturity = {};
-      // Helper to normalize names for key matching
-      function normalizeName(name) {
-        return name
-          ? name.toString().trim().toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ')
-          : '';
-      }
-      // Helper to recursively collect all capabilities
-      function collectCapabilities(vc, vcName) {
-        if (vc.Capability && Array.isArray(vc.Capability)) {
-          vc.Capability.forEach(cap => {
-            if (cap.Name) {
-              const vcKey = normalizeName(vcName || vc.Name || '');
-              const capKey = normalizeName(cap.Name || '');
-              if (cap['Maturity Level']) capMaturity[`${vcKey}||${capKey}`] = cap['Maturity Level'];
-              if (cap['Business Maturity']) capMaturity[`${vcKey}||${capKey}|business`] = cap['Business Maturity'];
-              if (cap['Technology Maturity']) capMaturity[`${vcKey}||${capKey}|technology`] = cap['Technology Maturity'];
-            }
-            // Recursively collect nested capabilities
-            if (cap.Capability && Array.isArray(cap.Capability)) {
-              collectCapabilities(cap, vcName || vc.Name);
-            }
-          });
+    if (!entryId) return;
+    getCapabilitiesByEntryId(entryId)
+      .then(caps => {
+        const capMaturity = {};
+        function normalizeName(name) {
+          return name
+            ? name.toString().trim().toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ')
+            : '';
         }
-      }
-      if (sub && sub.ValueChain && Array.isArray(sub.ValueChain)) {
-        sub.ValueChain.forEach(vc => {
-          collectCapabilities(vc, vc.Name);
+        caps.forEach(cap => {
+          const vcKey = normalizeName(cap.valueChainName || '');
+          const capKey = normalizeName(cap.name || '');
+          if (cap.maturityLevel) capMaturity[`${vcKey}||${capKey}`] = cap.maturityLevel;
+          if (cap.businessMaturity) capMaturity[`${vcKey}||${capKey}|business`] = cap.businessMaturity;
+          if (cap.technologyMaturity) capMaturity[`${vcKey}||${capKey}|technology`] = cap.technologyMaturity;
         });
-      }
-      setCapabilityMaturity(capMaturity);
-    });
-  }, [businessType, popupInfo, userFlow]);
+        setCapabilityMaturity(capMaturity);
+      })
+      .catch(() => setCapabilityMaturity({}));
+  }, [entryId, popupInfo, userFlow]);
 
   // Persist all capabilities (name only) for each value chain (frame) on load
   useEffect(() => {
@@ -259,6 +240,7 @@ function BusinessCapabilities({ businessType, onNext, userFlow, filterMaturityOn
         setShowAssessment={setShowAssessment}
         userFlow={userFlow}
         entryId={entryId} // Pass entryId for completeness
+        // Remove onSaveSuccess since refreshMaturityData is gone
       />
     </div>
   );
