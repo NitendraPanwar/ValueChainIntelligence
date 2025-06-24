@@ -18,7 +18,7 @@ const cardStyle = {
   boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
 };
 
-const CapabilityMaturityAssessment = ({ valueChainName, capabilityName, valueChainId, capabilityId, user, onSaveSuccess }) => {
+const CapabilityMaturityAssessment = ({ valueChainName, capabilityName, valueChainId, capabilityId, user, onSaveSuccess, valueChainEntryId, valueChainEntryName, entryId, entryName }) => {
   const [businessOwner, setBusinessOwner] = useState('');
   const [techOwner, setTechOwner] = useState('');
   const [businessMaturity, setBusinessMaturity] = useState('');
@@ -74,10 +74,10 @@ const CapabilityMaturityAssessment = ({ valueChainName, capabilityName, valueCha
     const payload = {
       valueChainId,
       valueChainName,
-      valueChainEntryId: props.valueChainEntryId || props.entryId || valueChainId,
-      valueChainEntryName: props.valueChainEntryName || props.entryName || valueChainName,
-      entryId: props.valueChainEntryId || props.entryId || valueChainId,
-      entryName: props.valueChainEntryName || props.entryName || valueChainName,
+      valueChainEntryId: valueChainEntryId || entryId || valueChainId,
+      valueChainEntryName: valueChainEntryName || entryName || valueChainName,
+      entryId: valueChainEntryId || entryId || valueChainId,
+      entryName: valueChainEntryName || entryName || valueChainName,
       name: capabilityName,
       businessMaturity,
       technologyMaturity: techMaturity,
@@ -85,7 +85,7 @@ const CapabilityMaturityAssessment = ({ valueChainName, capabilityName, valueCha
       businessOwner,
       techOwner,
     };
-    console.log('Persisting capability with payload:', payload);
+    console.log('Persisting maturity assessment with payload:', payload);
     try {
       const res = await persistCapability(payload);
       if (res.ok || res.status === 200 || res.success) {
@@ -101,6 +101,13 @@ const CapabilityMaturityAssessment = ({ valueChainName, capabilityName, valueCha
 
   return (
     <div style={{ width: '100%', minHeight: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', padding: 24 }}>
+      {/* Show key identifiers for debugging/visibility */}
+      <div style={{ marginBottom: 16, background: '#f3f6fa', border: '1px solid #b6c2d6', borderRadius: 8, padding: 12, fontSize: 15, color: '#2b5cb8' }}>
+        <div><b>valueChainId:</b> {valueChainId}</div>
+        <div><b>valueChainEntryId:</b> {valueChainEntryId}</div>
+        <div><b>valueChainEntryName:</b> {valueChainEntryName}</div>
+        <div><b>valueChainName:</b> {valueChainName}</div>
+      </div>
       {/* Top left: Value Chain name and Capability name */}
       <div style={{ fontWeight: 700, fontSize: '1.1em', margin: '0 0 8px 4px', color: '#2b5cb8' }}>
         {valueChainName} : {capabilityName}

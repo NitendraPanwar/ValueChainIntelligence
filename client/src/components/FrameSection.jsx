@@ -40,7 +40,9 @@ function FrameSection({
                   text: cap.shortDescription || cap.description,
                   capName: cap.name,
                   frameName: frame.name,
-                  valueChainId: frame.valueChainId || frame._id // Pass valueChainId for assessment
+                  valueChainId: frame.valueChainId || frame._id, // Pass valueChainId for assessment
+                  valueChainEntryId: frame.valueChainEntryId, // Pass valueChainEntryId
+                  valueChainEntryName: frame.valueChainEntryName // Pass valueChainEntryName
                 });
                 setHoverInfo({ show: false, text: '', x: 0, y: 0 });
                 setIsExpanded(false); // Reset expand state

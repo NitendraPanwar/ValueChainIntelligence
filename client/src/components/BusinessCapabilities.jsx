@@ -90,7 +90,6 @@ function BusinessCapabilities({ businessType, onNext, userFlow, filterMaturityOn
               valueChainEntryId: entryId,
               valueChainEntryName: userFlow.name
             };
-            console.log('[BusinessCapabilities] Persisting capability:', payload);
             persistCapability(payload)
               .then(res => {
                 // Handle response if needed
@@ -122,11 +121,13 @@ function BusinessCapabilities({ businessType, onNext, userFlow, filterMaturityOn
   // Show back button if filterMaturityOnly is true
   const showBackButton = !!filterMaturityOnly;
 
-  // Ensure each frame has valueChainId and valueChainName
+  // Ensure each frame has valueChainId, valueChainName, valueChainEntryId, and valueChainEntryName
   const framesWithIds = frames.map((frame, idx) => ({
     ...frame,
     valueChainId: frame.valueChainId || frame._id || effectiveValueChainIds[idx] || effectiveValueChainIds[0],
     valueChainName: frame.valueChainName || effectiveValueChainNames[idx] || effectiveValueChainNames[0],
+    valueChainEntryId: entryId, // Always pass entryId from props
+    valueChainEntryName: userFlow.name // Always pass entryName from userFlow
   }));
 
   if (!valueChainIds.length || !valueChainNames.length) {
