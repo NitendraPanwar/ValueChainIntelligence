@@ -9,7 +9,8 @@ function CapabilityPopupModal({
   setPopupInfo,
   setIsExpanded,
   setShowAssessment,
-  userFlow
+  userFlow,
+  entryId // <-- add entryId to props
 }) {
   if (!popupInfo.show) return null;
   return (
@@ -51,6 +52,11 @@ function CapabilityPopupModal({
             <CapabilityMaturityAssessment
               valueChainName={popupInfo.frameName}
               capabilityName={popupInfo.capName}
+              valueChainId={popupInfo.valueChainId}
+              valueChainEntryId={popupInfo.valueChainEntryId}
+              valueChainEntryName={popupInfo.valueChainEntryName}
+              entryId={popupInfo.valueChainEntryId}
+              entryName={popupInfo.valueChainEntryName}
               user={userFlow}
               onSaveSuccess={() => {
                 setPopupInfo({ show: false, text: '' });

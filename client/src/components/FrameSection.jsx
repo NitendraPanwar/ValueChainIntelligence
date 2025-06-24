@@ -35,7 +35,15 @@ function FrameSection({
               onInfoClick={e => {
                 e.preventDefault();
                 e.stopPropagation();
-                setPopupInfo({ show: true, text: cap.description, capName: cap.name, frameName: frame.name });
+                setPopupInfo({
+                  show: true,
+                  text: cap.shortDescription || cap.description,
+                  capName: cap.name,
+                  frameName: frame.name,
+                  valueChainId: frame.valueChainId || frame._id, // Pass valueChainId for assessment
+                  valueChainEntryId: frame.valueChainEntryId, // Pass valueChainEntryId
+                  valueChainEntryName: frame.valueChainEntryName // Pass valueChainEntryName
+                });
                 setHoverInfo({ show: false, text: '', x: 0, y: 0 });
                 setIsExpanded(false); // Reset expand state
                 setShowAssessment(false); // Reset assessment state
@@ -43,7 +51,7 @@ function FrameSection({
               onInfoHover={e => {
                 if (!popupInfo.show) {
                   const rect = e.currentTarget.getBoundingClientRect();
-                  setHoverInfo({ show: true, text: cap.description, x: rect.right, y: rect.bottom });
+                  setHoverInfo({ show: true, text: cap.shortDescription || cap.description, x: rect.right, y: rect.bottom });
                 }
               }}
               onInfoLeave={() => {

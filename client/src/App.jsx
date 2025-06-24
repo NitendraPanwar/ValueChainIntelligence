@@ -8,13 +8,16 @@ import WizardProgressPrototypes from './components/WizardProgressPrototypes';
 import StrategicInitiativePage from './components/StrategicInitiativePage';
 import SelectedCapabilitiesPage from './components/SelectedCapabilitiesPage';
 import LoadDataPage from './components/LoadDataPage';
+import ReadDataPage from './components/ReadDataPage';
 import { mutuallyExclusiveHeaders } from './config';
 import './App.css';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { getHomepageIndustriesFromMongo, getHomepageBusinessComplexityFromMongo } from './utils/mongoApi';
+import { getValueChainsByEntryId } from './utils/api.valuechains';
 
 function App() {
   // Use a single page state for clarity
-  const [page, setPage] = useState('home'); // 'home', 'oldHome', 'valueChain', 'thirdPage'
+  const [page, setPage] = useState('home'); // 'home', 'oldHome', 'valueChain', 'businessCapabilities'
   const [frames, setFrames] = useState([]);
   const [headers, setHeaders] = useState([]);
   const [error, setError] = useState('');
@@ -26,42 +29,51 @@ function App() {
   const [preselectedBusinessType, setPreselectedBusinessType] = useState('');
   const [wizardStep, setWizardStep] = useState(0); // 0: Business Complexity, 1: Value Chain, 2: Business Capabilities, 3: Capability Assessment, 4: Value Chain Ready
   const [userFlow, setUserFlow] = useState({ name: '', businessType: '', label: '' });
+  const [businessComplexityOptions, setBusinessComplexityOptions] = useState([]);
+  const [entryId, setEntryId] = useState(null);
+  const [valueChainIds, setValueChainIds] = useState([]);
+  const [valueChainNames, setValueChainNames] = useState([]);
 
   // Navigation helpers
   const goToHome = () => setPage('home');
   const goToOldHome = () => setPage('oldHome');
   const goToValueChain = () => setPage('valueChain');
-  const goToThirdPage = () => setPage('thirdPage');
+  const goToBusinessCapabilities = () => setPage('businessCapabilities');
 
   useEffect(() => {
     if (page !== 'oldHome') return;
-    fetch('/VC_Capability_Master.xlsx')
-      .then((res) => res.arrayBuffer())
-      .then((data) => {
-        import('xlsx').then(XLSX => {
-          const workbook = XLSX.read(data, { type: 'array' });
-          const sheet = workbook.Sheets['Homepage'];
-          if (!sheet) {
-            setError('Homepage sheet not found.');
-            return;
-          }
-          const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-          const columns = json[0]?.length || 0;
-          const headers = json[0] || [];
-          const framesArr = [];
-          for (let col = 0; col < columns; col++) {
-            const frame = [];
-            for (let row = 1; row < json.length; row++) {
-              if (json[row][col]) frame.push(json[row][col]);
-            }
-            framesArr.push(frame);
-          }
-          setFrames(framesArr);
+    // Fetch headers and frames from MongoDB Homepage sheet
+    getHomepageIndustriesFromMongo().then(types => {
+      // We'll need to fetch the full Homepage sheet from MongoDB to get headers and frames
+      getHomepageBusinessComplexityFromMongo().then(bcOptions => {
+        setBusinessComplexityOptions(bcOptions);
+      });
+      // Fetch the full Homepage sheet from MongoDB
+      fetch('/api/mongo/read?sheetName=Homepage')
+        .then(res => res.json())
+        .then(json => {
+          if (!json.success || !Array.isArray(json.data) || json.data.length === 0) return;
+          // Remove id/_id columns from headers
+          const headersRaw = Object.keys(json.data[0]);
+          const headers = headersRaw.filter(h => h.trim().toLowerCase() !== '_id' && h.trim().toLowerCase() !== 'id');
           setHeaders(headers);
+          // Build frames: for each header, collect all unique values (excluding empty and id/_id)
+          const framesArr = headers.map(h => {
+            const vals = json.data.map(row => row[h]).filter(v => v && v.toString().trim() !== '' && v.toString().trim().toLowerCase() !== '_id' && v.toString().trim().toLowerCase() !== 'id');
+            // Only unique values
+            return [...new Set(vals)];
+          });
+          setFrames(framesArr);
           setError('');
         });
-      })
-      .catch(() => setError('Failed to load Excel file.'));
+    });
+  }, [page]);
+
+  useEffect(() => {
+    // Fetch business complexity options from MongoDB when page is oldHome
+    if (page === 'oldHome') {
+      getHomepageBusinessComplexityFromMongo().then(setBusinessComplexityOptions);
+    }
   }, [page]);
 
   const handleButtonClick = (frameIdx, btnIdx) => {
@@ -87,24 +99,53 @@ function App() {
     }
   };
 
+  // Handler to set valueChainName in userFlow
+  const handleSetValueChainName = (valueChainName) => {
+    setUserFlow(prev => ({ ...prev, valueChainName }));
+  };
+
+  useEffect(() => {
+    // Fetch value chains for the selected entry when entering businessCapabilities page
+    if (page === 'businessCapabilities' && entryId) {
+      getValueChainsByEntryId(entryId)
+        .then((chains) => {
+          if (Array.isArray(chains)) {
+            setValueChainIds(chains.map(vc => vc._id));
+            setValueChainNames(chains.map(vc => vc.Name || vc.name));
+          } else if (chains && typeof chains === 'object') {
+            // In case API returns a single object
+            setValueChainIds([chains._id]);
+            setValueChainNames([chains.Name || chains.name]);
+          } else {
+            setValueChainIds([]);
+            setValueChainNames([]);
+          }
+        })
+        .catch(() => {
+          setValueChainIds([]);
+          setValueChainNames([]);
+        });
+    }
+  }, [page, entryId]);
+
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/prototype" element={<WizardProgressPrototypes />} />
         <Route path="/strategic-initiative/selected-capabilities" element={<SelectedCapabilitiesPage />} />
         <Route path="/load-data" element={<LoadDataPage />} />
+        <Route path="/Read-Data" element={<ReadDataPage />} />
         <Route path="*" element={
           (() => {
             if (page === 'home') {
               return <HomePage onOk={(selectedType, name, label, directToBlocks) => {
-                // Removed debug log for navigation
-                setUserFlow({ name, businessType: selectedType, label });
+                setUserFlow({ name, businessType: selectedType, label, valueChainName: name });
                 setPreselectedBusinessType(selectedType);
                 setWizardStep(0);
                 if (label === 'Strategic Initiative' && directToBlocks) {
                   setPage('strategicInitiative');
                 } else if (directToBlocks) {
-                  setTimeout(() => setPage('thirdPage'), 0);
+                  setTimeout(() => setPage('businessCapabilities'), 0);
                 } else {
                   goToOldHome();
                 }
@@ -122,9 +163,10 @@ function App() {
                     error={error}
                     selected={selected}
                     handleButtonClick={handleButtonClick}
-                    setShowValueChain={() => { setPage('valueChain'); setWizardStep(1); }}
+                    setShowValueChain={(_id) => { setEntryId(_id); setPage('valueChain'); setWizardStep(1); }}
                     preselectedBusinessType={preselectedBusinessType}
                     userFlow={userFlow}
+                    businessComplexityOptions={businessComplexityOptions}
                   />
                 </>
               );
@@ -144,14 +186,17 @@ function App() {
                     frames={frames}
                     headers={headers}
                     onBack={() => { setPage('oldHome'); setWizardStep(0); }}
-                    onNextPage={() => { setPage('thirdPage'); setWizardStep(2); }}
+                    onNextPage={() => { setPage('businessCapabilities'); setWizardStep(2); }}
                     preselectedBusinessType={preselectedBusinessType}
                     userFlow={userFlow}
+                    onSetValueChainName={handleSetValueChainName}
+                    entryId={entryId}
+                    entryName={userFlow.name}
                   />
                 </>
               );
             }
-            if (page === 'thirdPage') {
+            if (page === 'businessCapabilities') {
               let businessType = '';
               Object.keys(selected).forEach(key => {
                 if (selected[key]) {
@@ -165,7 +210,7 @@ function App() {
               if (preselectedBusinessType) {
                 businessType = preselectedBusinessType;
               }
-              // Removed debug log for businessType
+              // Pass valueChainIds and valueChainNames arrays to BusinessCapabilities
               return (
                 <>
                   <div style={{ height: 90 }} />
@@ -178,6 +223,11 @@ function App() {
                     }}
                     userFlow={userFlow}
                     filterMaturityOnly={false}
+                    entryId={entryId}
+                    valueChainIds={valueChainIds}
+                    valueChainNames={valueChainNames}
+                    valueChainEntryId={entryId}
+                    valueChainEntryName={userFlow.name}
                   />
                 </>
               );
@@ -192,10 +242,12 @@ function App() {
                     onNext={() => { setWizardStep(4); setPage('ready'); }}
                     onBack={() => {
                       setWizardStep(2);
-                      setPage('thirdPage');
+                      setPage('businessCapabilities');
                     }}
                     userFlow={userFlow}
                     filterMaturityOnly={true}
+                    entryId={entryId}
+                    valueChainId={entryId} // <-- Pass valueChainId explicitly
                   />
                 </>
               );

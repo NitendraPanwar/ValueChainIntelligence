@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import * as XLSX from 'xlsx';
 import InlineInfoIcon from './InlineInfoIcon';
 import { saveSubmission, getSubmissions } from '../utils/api';
+import { getHomepageIndustriesFromMongo, getHomepageBusinessComplexityFromMongo, getValueChainMasterFromMongo } from '../utils/mongoApi';
+import { getAllValueChainEntries } from '../utils/api.valuechainentries';
 import { useNavigate } from 'react-router-dom';
 
 function HomePage({ onOk }) {
@@ -17,29 +18,21 @@ function HomePage({ onOk }) {
   const [selectedValueChain, setSelectedValueChain] = useState('');
   const [valueChainEntries, setValueChainEntries] = useState([]); // For Strategic Initiative dropdown
   const [selectedValueChainEntry, setSelectedValueChainEntry] = useState('');
+  const [businessComplexityOptions, setBusinessComplexityOptions] = useState([]);
+  const [valueChainMasterEntries, setValueChainMasterEntries] = useState([]); // For Strategic Initiative dropdown (from MongoDB)
+  const [allValueChainEntries, setAllValueChainEntries] = useState([]); // For Value Chain button
   // Info tooltip state
   const [hoverInfo, setHoverInfo] = useState({ show: false, text: '', x: 0, y: 0 });
 
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch('/VC_Capability_Master.xlsx')
-      .then(res => res.arrayBuffer())
-      .then(data => {
-        const workbook = XLSX.read(data, { type: 'array' });
-        const sheet = workbook.Sheets['Homepage'];
-        if (!sheet) return;
-        const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-        const headerRow = json[0] || [];
-        const businessTypeCol = headerRow.findIndex(h => h && h.toString().trim().toLowerCase() === 'industry');
-        if (businessTypeCol === -1) return;
-        const types = [];
-        for (let i = 1; i < json.length; i++) {
-          const val = json[i][businessTypeCol];
-          if (val && !types.includes(val)) types.push(val);
-        }
-        setBusinessTypes(types);
-      });
+    // Fetch unique industries from MongoDB Homepage sheet
+    getHomepageIndustriesFromMongo().then(types => {
+      setBusinessTypes(types);
+    });
+    // Fetch unique Business Complexity options from MongoDB
+    getHomepageBusinessComplexityFromMongo().then(setBusinessComplexityOptions);
   }, []);
 
   useEffect(() => {
@@ -52,39 +45,23 @@ function HomePage({ onOk }) {
     }
   }, [showAdd, currentButtonLabel]);
 
-  // Fetch value chains for Strategic Initiative
+  // Fetch value chain master entries from MongoDB for Strategic Initiative
   useEffect(() => {
     if (showPopup && currentButtonLabel === 'Strategic Initiative') {
-      fetch('/VC_Capability_Master.xlsx')
-        .then(res => res.arrayBuffer())
-        .then(data => {
-          const workbook = XLSX.read(data, { type: 'array' });
-          const vcSheet = workbook.Sheets['Value Chain Master'];
-          if (!vcSheet) return;
-          const vcJson = XLSX.utils.sheet_to_json(vcSheet, { header: 1 });
-          const valueChainCol = (vcJson[0] || []).findIndex(h => h && h.toString().trim().toLowerCase() === 'value chain');
-          const names = [];
-          for (let i = 1; i < vcJson.length; i++) {
-            const val = vcJson[i][valueChainCol];
-            if (val && !names.includes(val)) names.push(val);
-          }
-          setValueChains(names);
-        });
-    }
-  }, [showPopup, currentButtonLabel]);
-
-  // Fetch value chain entries from submissions for Strategic Initiative
-  useEffect(() => {
-    if (showPopup && currentButtonLabel === 'Strategic Initiative') {
-      import('../utils/api').then(api => {
-        api.getSubmissions().then(subs => {
-          // Only entries created with the Value chain button
-          const entries = subs.filter(s => s.label === 'Value chain');
-          setValueChainEntries(entries);
-        });
+      getValueChainMasterFromMongo().then(entries => {
+        setValueChainMasterEntries(entries);
       });
     }
   }, [showPopup, currentButtonLabel]);
+
+  useEffect(() => {
+    // Fetch all value chain entries when 'Value chain' button is clicked
+    if (showAdd && currentButtonLabel === 'Value chain') {
+      getAllValueChainEntries().then(entries => {
+        setAllValueChainEntries(entries);
+      });
+    }
+  }, [showAdd, currentButtonLabel]);
 
   const showLoadDataButton = import.meta.env.VITE_LOAD_MONGO_DB === 'true' || import.meta.env.VITE_LOAD_MONGO_DB === true;
 
@@ -205,23 +182,38 @@ function HomePage({ onOk }) {
             <button key={idx} className="frame-btn" style={{ width: 240, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
               onClick={() => {
                 setSelectedEntry(null);
-                onOk(entry.businessType, entry.name, entry.label, true); // Pass a flag to indicate direct jump to BusinessCapabilities
+                onOk(entry.businessType, entry.valueChainEntryName, entry.label, true); // Pass a flag to indicate direct jump to BusinessCapabilities
               }}>
               {currentButtonLabel === 'Strategic Initiative' ? (
                 <>
-                  <span style={{ fontWeight: 600 }}>{entry.initiativeName || entry.name}</span>
+                  <span style={{ fontWeight: 600 }}>{entry.initiativeName || entry.valueChainEntryName}</span>
                   <span style={{ fontSize: 14, color: '#666', marginTop: 4 }}>
                     ({entry.valueChainEntryName || entry.businessType})
                   </span>
                 </>
               ) : (
                 <>
-                  <span>{entry.name}</span>
+                  <span>{entry.valueChainEntryName}</span>
                   <span style={{ fontSize: 14, color: '#666', marginTop: 4 }}>({entry.businessType})</span>
                 </>
               )}
             </button>
-          ))
+          )),
+          // Show all ValueChainEntries as buttons when 'Value chain' is clicked
+          ...(currentButtonLabel === 'Value chain' ? allValueChainEntries.filter(e => e.name).map((entry, idx) => (
+            <button
+              key={entry._id || idx}
+              className="frame-btn"
+              style={{ width: 240, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
+              onClick={() => {
+                setSelectedEntry(null);
+                onOk(entry.businessType, entry.name, 'Value chain', true);
+              }}
+            >
+              <span>{entry.name}</span>
+              <span style={{ fontSize: 14, color: '#666', marginTop: 4 }}>({entry.businessType})</span>
+            </button>
+          )) : [])
         ];
         // Pad with empty columns if fewer than 4
         while (allButtons.length < 4) {
@@ -253,20 +245,26 @@ function HomePage({ onOk }) {
                   <label style={{ minWidth: 140, textAlign: 'right', marginRight: 12 }}>Value Chain:&nbsp;</label>
                   <select value={selectedValueChainEntry} onChange={e => setSelectedValueChainEntry(e.target.value)} style={{ flex: 1 }}>
                     <option value="">Select...</option>
-                    {valueChainEntries.map((entry, idx) => (
-                      <option key={idx} value={entry.name}>{entry.name} ({entry.businessType})</option>
-                    ))}
+                    {valueChainMasterEntries.map((entry, idx) => {
+                      // Only show if valueChainEntryName exists (frame name)
+                      if (!entry.valueChainEntryName) return null;
+                      return (
+                        <option key={idx} value={entry.valueChainEntryName}>
+                          {entry.valueChainEntryName}{entry.description ? ` - ${entry.description}` : ''}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
                 <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
                   <button
                     className="frame-btn"
                     onClick={() => {
-                      const entry = valueChainEntries.find(e => e.name === selectedValueChainEntry);
+                      const entry = valueChainMasterEntries.find(e => e.valueChainEntryName === selectedValueChainEntry);
                       setShowPopup(false);
                       setShowAdd(false);
                       if (entry) {
-                        onOk(entry.businessType, entry.name, 'Strategic Initiative', true);
+                        onOk('', entry.valueChainEntryName, 'Strategic Initiative', true);
                       }
                     }}
                     disabled={!selectedValueChainEntry}
@@ -299,7 +297,7 @@ function HomePage({ onOk }) {
                   <button
                     className="frame-btn"
                     onClick={async () => {
-                      await saveSubmission({ name: valueChainName, businessType: selectedBusinessType, label: currentButtonLabel });
+                      // await saveSubmission({ name: valueChainName, businessType: selectedBusinessType, label: currentButtonLabel });
                       setShowPopup(false);
                       setShowAdd(false);
                       onOk(selectedBusinessType, valueChainName, currentButtonLabel);

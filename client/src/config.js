@@ -4,7 +4,7 @@ export const mutuallyExclusiveHeaders = [
   'Industry',
   'Number of Employees',
   'Business Complexity',
-  'Annual Revenues (US$)'
+  'Annual Revenues'
 ];
 
 // Configuration array for Maturity Level dropdown values
