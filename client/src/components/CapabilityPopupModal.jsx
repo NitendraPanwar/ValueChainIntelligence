@@ -52,6 +52,10 @@ function CapabilityPopupModal({
               valueChainName={popupInfo.frameName}
               capabilityName={popupInfo.capName}
               valueChainId={popupInfo.valueChainId} // Pass valueChainId for persistence
+              valueChainEntryId={userFlow.valueChainEntryId || popupInfo.valueChainEntryId || entryId}
+              valueChainEntryName={userFlow.valueChainEntryName || popupInfo.valueChainEntryName || userFlow.name}
+              entryId={userFlow.valueChainEntryId || popupInfo.valueChainEntryId || entryId}
+              entryName={userFlow.valueChainEntryName || popupInfo.valueChainEntryName || userFlow.name}
               user={userFlow}
               onSaveSuccess={() => {
                 setPopupInfo({ show: false, text: '' });

@@ -125,13 +125,9 @@ function BusinessComplexity({
         })}
       </div>
       <button className="lets-go-btn" onClick={async () => {
-        // Debug: log headers and frames
-        console.log('Headers:', normalizedHeaders);
-        console.log('Frames:', frames);
         // Save value chain entry to MongoDB
         const businessComplexity = getSelectedValue('Business Complexity');
         const annualRevenues = getSelectedValue('Annual Revenues (US$)');
-        console.log('Annual Revenues selected:', annualRevenues);
         try {
           const response = await saveValueChainEntry({
             name: userFlow.name,

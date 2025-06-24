@@ -74,8 +74,10 @@ const CapabilityMaturityAssessment = ({ valueChainName, capabilityName, valueCha
     const payload = {
       valueChainId,
       valueChainName,
-      entryId: valueChainId, // If you have entryId prop, use it instead
-      entryName: valueChainName, // If you have entryName prop, use it instead
+      valueChainEntryId: props.valueChainEntryId || props.entryId || valueChainId,
+      valueChainEntryName: props.valueChainEntryName || props.entryName || valueChainName,
+      entryId: props.valueChainEntryId || props.entryId || valueChainId,
+      entryName: props.valueChainEntryName || props.entryName || valueChainName,
       name: capabilityName,
       businessMaturity,
       technologyMaturity: techMaturity,

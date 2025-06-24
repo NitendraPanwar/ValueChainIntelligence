@@ -81,15 +81,17 @@ function BusinessCapabilities({ businessType, onNext, userFlow, filterMaturityOn
           const key = `${currentValueChainId}||${entryId}||${cap.name.trim().toLowerCase()}`;
           if (!persisted.has(key)) {
             persisted.add(key);
-            persistCapability({
+            const payload = {
               valueChainId: currentValueChainId,
               valueChainName: currentValueChainName,
-              entryId,
+              entryId: entryId,
               entryName: userFlow.name,
               name: cap.name,
               valueChainEntryId: entryId,
               valueChainEntryName: userFlow.name
-            })
+            };
+            console.log('[BusinessCapabilities] Persisting capability:', payload);
+            persistCapability(payload)
               .then(res => {
                 // Handle response if needed
               })

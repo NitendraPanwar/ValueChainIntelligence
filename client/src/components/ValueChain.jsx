@@ -67,7 +67,6 @@ function ValueChain({ selected, frames, headers, onBack, onNextPage, preselected
     // Fetch all value chain master data from MongoDB (no filter)
     getValueChainMasterFromMongo()
       .then(found => {
-        console.log('[DEBUG] Loaded value chain data from MongoDB:', found);
         setVcName(found);
         setLoading(false);
       })

@@ -63,13 +63,6 @@ function HomePage({ onOk }) {
     }
   }, [showAdd, currentButtonLabel]);
 
-  // Debug: Log allValueChainEntries to verify fetch and structure
-  useEffect(() => {
-    if (showAdd && currentButtonLabel === 'Value chain') {
-      console.log('Fetched allValueChainEntries:', allValueChainEntries);
-    }
-  }, [allValueChainEntries, showAdd, currentButtonLabel]);
-
   const showLoadDataButton = import.meta.env.VITE_LOAD_MONGO_DB === 'true' || import.meta.env.VITE_LOAD_MONGO_DB === true;
 
   return (

@@ -14,7 +14,6 @@ app.use(express.json());
 
 // Save submission
 app.post('/api/save', async (req, res) => {
-  console.log('Received submission:', JSON.stringify(req.body, null, 2));
   const { name, businessType, label, businessComplexity } = req.body;
   const annualRevenues = req.body["Annual Revenues (US$)"];
   if (!name || !businessType) {
@@ -47,7 +46,6 @@ app.post('/api/save', async (req, res) => {
       if (annualRevenues !== undefined) updated["Annual Revenues (US$)"] = annualRevenues;
       if (req.body.ValueChain !== undefined) {
         updated["ValueChain"] = req.body.ValueChain;
-        console.log('Saving ValueChain:', JSON.stringify(req.body.ValueChain, null, 2));
       }
       updated.timestamp = new Date().toISOString();
       await db.collection('Submissions').updateOne(
@@ -65,7 +63,6 @@ app.post('/api/save', async (req, res) => {
 
 // Save capability maturity assessment as nested Capability array within ValueChain
 app.post('/api/saveCapabilityAssessment', async (req, res) => {
-  console.log('Received capability assessment:', JSON.stringify(req.body, null, 2));
   const { name, businessType, label, valueChainName, capabilityName, assessment } = req.body;
   if (!name || !businessType || !valueChainName || !capabilityName || !assessment) {
     return res.status(400).json({ error: 'Missing required fields.' });
@@ -126,7 +123,6 @@ app.post('/api/saveCapabilityAssessment', async (req, res) => {
 
 // Save initiative (Strategic Initiative flow)
 app.post('/api/save-initiative', async (req, res) => {
-  console.log('[Initiative] Received:', JSON.stringify(req.body, null, 2));
   const { initiativeName, initiativeOwner, initiativeScope, initiativeFunction, valueChainEntryName, label, selectedSuggestions } = req.body;
   if (!initiativeName || !initiativeOwner || !initiativeScope || !initiativeFunction || !valueChainEntryName) {
     return res.status(400).json({ error: 'All fields are required.' });
@@ -359,7 +355,6 @@ app.get('/api/maturitylevels', async (req, res) => {
 app.post('/api/valuechainentry', async (req, res) => {
   const { name, businessType, label, businessComplexity } = req.body;
   let { annualRevenues } = req.body;
-  console.log('[DEBUG] Received annualRevenues:', annualRevenues, 'from req.body:', req.body);
   if (annualRevenues === undefined) annualRevenues = '';
   if (!name || !businessType) {
     return res.status(400).json({ error: 'Name and businessType are required.' });
@@ -374,7 +369,6 @@ app.post('/api/valuechainentry', async (req, res) => {
       annualRevenues,
       timestamp: new Date().toISOString()
     };
-    console.log('[DEBUG] Saving newEntry to MongoDB:', newEntry);
     // Upsert: update if exists, insert if not
     const result = await db.collection('ValueChainEntries').updateOne(
       { name, businessType },
@@ -405,7 +399,6 @@ app.get('/api/valuechainentries', async (req, res) => {
 // Create ValueChains for a ValueChainEntry (1:N)
 app.post('/api/valuechains', async (req, res) => {
   const { valueChainEntryId, valueChainEntryName, valueChains } = req.body;
-  console.log('[DEBUG] /api/valuechains POST called with:', { valueChainEntryId, valueChainEntryName, valueChains });
   if (!valueChainEntryId || !Array.isArray(valueChains)) {
     return res.status(400).json({ error: 'valueChainEntryId and valueChains[] are required.' });
   }
@@ -453,20 +446,15 @@ app.get('/api/valuechains/:entryId', async (req, res) => {
   try {
     const db = await getDb();
     const entryId = req.params.entryId;
-    console.log('[DEBUG] /api/valuechains/:entryId GET called with:', entryId);
     let objectId;
     try {
       objectId = new ObjectId(entryId);
-      console.log('[DEBUG] entryId is valid ObjectId:', objectId);
     } catch (e) {
-      console.log('[DEBUG] entryId is NOT a valid ObjectId:', entryId);
       // Not a valid ObjectId, return empty array
       return res.json([]);
     }
     const query = { valueChainEntryId: objectId };
-    console.log('[DEBUG] Querying ValueChains with:', JSON.stringify(query));
     const valueChains = await db.collection('ValueChains').find(query).toArray();
-    console.log('[DEBUG] ValueChains found:', valueChains.length, valueChains);
     res.json(valueChains);
   } catch (err) {
     console.error('MongoDB ValueChains fetch error:', err);
@@ -489,7 +477,7 @@ app.get('/api/capabilities/:valueChainId', async (req, res) => {
 
 // Create or update a Capability for a ValueChain
 app.post('/api/capability', async (req, res) => {
-  const { valueChainId, valueChainName, entryId, entryName, name, businessMaturity, technologyMaturity, maturityLevel, businessOwner, techOwner } = req.body;
+  const { valueChainId, valueChainName, entryId, entryName, name, businessMaturity, technologyMaturity, maturityLevel, businessOwner, techOwner, valueChainEntryId, valueChainEntryName } = req.body;
   if (!valueChainId || !name) {
     return res.status(400).json({ error: 'valueChainId and name are required.' });
   }
@@ -506,6 +494,8 @@ app.post('/api/capability', async (req, res) => {
     if (valueChainName !== undefined) updateFields.valueChainName = valueChainName;
     if (entryId !== undefined) updateFields.entryId = entryId;
     if (entryName !== undefined) updateFields.entryName = entryName;
+    if (valueChainEntryId !== undefined) updateFields.valueChainEntryId = valueChainEntryId;
+    if (valueChainEntryName !== undefined) updateFields.valueChainEntryName = valueChainEntryName;
     const update = { $set: updateFields };
     const result = await db.collection('Capabilities').updateOne(filter, update, { upsert: true });
     res.json({ success: true });

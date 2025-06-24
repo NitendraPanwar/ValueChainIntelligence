@@ -226,6 +226,8 @@ function App() {
                     entryId={entryId}
                     valueChainIds={valueChainIds}
                     valueChainNames={valueChainNames}
+                    valueChainEntryId={entryId}
+                    valueChainEntryName={userFlow.name}
                   />
                 </>
               );
