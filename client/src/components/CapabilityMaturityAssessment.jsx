@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { persistCapability } from '../utils/api';
+import { persistCapability, updateCapabilityMaturity } from '../utils/api';
 import { getMaturityLevelsFromMongo, lookupMaturityLevelLabel, getAllMaturityDescriptionsFromMongo } from '../utils/mongoApi';
 
 const cardStyle = {
@@ -87,7 +87,7 @@ const CapabilityMaturityAssessment = ({ valueChainName, capabilityName, valueCha
     };
     console.log('Persisting maturity assessment with payload:', payload);
     try {
-      const res = await persistCapability(payload);
+      const res = await updateCapabilityMaturity(payload);
       if (res.ok || res.status === 200 || res.success) {
         setStatus('Saved!');
         if (onSaveSuccess) onSaveSuccess();

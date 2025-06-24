@@ -579,6 +579,34 @@ app.delete('/api/valuechains', async (req, res) => {
   }
 });
 
+// Update only maturity fields for a capability
+app.post('/api/updateCapability', async (req, res) => {
+  const { valueChainEntryName, valueChainName, name, businessMaturity, technologyMaturity, maturityLevel, businessOwner, techOwner } = req.body;
+  if (!valueChainEntryName || !valueChainName || !name) {
+    return res.status(400).json({ error: 'valueChainEntryName, valueChainName, and name are required.' });
+  }
+  try {
+    const db = await getDb();
+    const filter = { valueChainEntryName, valueChainName, name };
+    const capability = await db.collection('Capabilities').findOne(filter);
+    if (!capability) {
+      return res.status(404).json({ error: 'Capability not found for given valueChainEntryName, valueChainName, and name.' });
+    }
+    const updateFields = { updatedAt: new Date().toISOString() };
+    if (maturityLevel !== undefined) updateFields.maturityLevel = maturityLevel;
+    if (businessMaturity !== undefined) updateFields.businessMaturity = businessMaturity;
+    if (technologyMaturity !== undefined) updateFields.technologyMaturity = technologyMaturity;
+    if (businessOwner !== undefined) updateFields.businessOwner = businessOwner;
+    if (techOwner !== undefined) updateFields.techOwner = techOwner;
+    const update = { $set: updateFields };
+    await db.collection('Capabilities').updateOne({ _id: capability._id }, update);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[UpdateCapability API] MongoDB error:', err);
+    res.status(500).json({ error: 'Failed to update Capability maturity fields.' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });

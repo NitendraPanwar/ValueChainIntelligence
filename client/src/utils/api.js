@@ -97,3 +97,12 @@ export async function getAllCapabilities() {
   if (!res.ok) throw new Error('Failed to fetch all capabilities');
   return res.json();
 }
+
+// Update only maturity fields for a capability
+export async function updateCapabilityMaturity(payload) {
+  return fetch('/api/updateCapability', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+}
