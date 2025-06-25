@@ -18,7 +18,8 @@ function CapabilityButton({
   onInfoLeave,
   showCheckboxInFilteredView,
   onCapabilitySelect,
-  selectedCapabilities
+  selectedCapabilities,
+  onClick // <-- add onClick prop
 }) {
   const vcKey = normalizeName(frameName);
   const capKey = normalizeName(cap.name);
@@ -77,7 +78,9 @@ function CapabilityButton({
           />
         </span>
       )}
-      <button className={`frame-btn flipped`} disabled style={{ paddingLeft: 28, position: 'relative', paddingRight: 24 }}>
+      <button className={`frame-btn flipped`} disabled={false} style={{ paddingLeft: 28, position: 'relative', paddingRight: 24 }}
+        onClick={onClick}
+      >
         {displayMode === 'capability' && cap.name}
         {displayMode === 'business' && (capabilityMaturity[`${vcKey}||${capKey}|business`] || 'Not available')}
         {displayMode === 'technology' && (capabilityMaturity[`${vcKey}||${capKey}|technology`] || 'Not available')}

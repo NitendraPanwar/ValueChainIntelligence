@@ -48,6 +48,22 @@ function FrameSection({
                 setIsExpanded(false); // Reset expand state
                 setShowAssessment(false); // Reset assessment state
               }}
+              onClick={e => {
+                e.preventDefault();
+                e.stopPropagation();
+                // Only show popup if maturity is Low, Medium, or High
+                const vcKey = (frame.name || '').toString().trim().toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ');
+                const capKey = (cap.name || '').toString().trim().toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ');
+                const maturity = capabilityMaturity[`${vcKey}||${capKey}`];
+                if (['Low', 'Medium', 'High'].includes(maturity)) {
+                  setPopupInfo({
+                    show: true,
+                    text: 'left click done',
+                    x: e.clientX,
+                    y: e.clientY
+                  });
+                }
+              }}
               onInfoHover={e => {
                 if (!popupInfo.show) {
                   const rect = e.currentTarget.getBoundingClientRect();
