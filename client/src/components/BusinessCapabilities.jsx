@@ -236,6 +236,43 @@ function BusinessCapabilities({ businessType, onNext, userFlow, onBack, showChec
         </div>
         <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '32px 0 0 0', position: 'fixed', bottom: 32, right: 32, zIndex: 200 }}>
           {filterMaturityOnly && (
+            <>
+              <button
+                style={{
+                  padding: '12px 32px',
+                  fontSize: '1.1em',
+                  fontWeight: 600,
+                  borderRadius: 8,
+                  background: '#2b5cb8',
+                  color: '#fff',
+                  border: 'none',
+                  boxShadow: '0 2px 8px rgba(43,92,184,0.12)',
+                  cursor: 'pointer',
+                  marginRight: 24
+                }}
+                onClick={() => { setFilterMaturityOnly(false); setWizardStep && setWizardStep(2); }}
+              >
+                Back
+              </button>
+              <button
+                style={{
+                  padding: '12px 32px',
+                  fontSize: '1.1em',
+                  fontWeight: 600,
+                  borderRadius: 8,
+                  background: '#2b5cb8',
+                  color: '#fff',
+                  border: 'none',
+                  boxShadow: '0 2px 8px rgba(43,92,184,0.12)',
+                  cursor: 'pointer'
+                }}
+                onClick={() => { if (onNext) onNext(); }}
+              >
+                Next
+              </button>
+            </>
+          )}
+          {!filterMaturityOnly && (
             <button
               style={{
                 padding: '12px 32px',
@@ -246,31 +283,13 @@ function BusinessCapabilities({ businessType, onNext, userFlow, onBack, showChec
                 color: '#fff',
                 border: 'none',
                 boxShadow: '0 2px 8px rgba(43,92,184,0.12)',
-                cursor: 'pointer',
-                marginRight: 24
+                cursor: 'pointer'
               }}
-              onClick={() => { setFilterMaturityOnly(false); setWizardStep && setWizardStep(2); }}
+              onClick={() => { setFilterMaturityOnly(true); setWizardStep && setWizardStep(3); }}
             >
-              Back
+              Next
             </button>
           )}
-          <button
-            style={{
-              padding: '12px 32px',
-              fontSize: '1.1em',
-              fontWeight: 600,
-              borderRadius: 8,
-              background: '#2b5cb8',
-              color: '#fff',
-              border: 'none',
-              boxShadow: '0 2px 8px rgba(43,92,184,0.12)',
-              cursor: 'pointer'
-            }}
-            onClick={() => { setFilterMaturityOnly(true); setWizardStep && setWizardStep(3); }}
-            disabled={filterMaturityOnly}
-          >
-            Next
-          </button>
         </div>
       </div>
       <CapabilityPopupModal
