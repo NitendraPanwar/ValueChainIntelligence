@@ -607,6 +607,29 @@ app.post('/api/updateCapability', async (req, res) => {
   }
 });
 
+// Get all Capabilities for a ValueChain Entry (by entryId)
+app.get('/api/capabilities/byEntryId/:entryId', async (req, res) => {
+  try {
+    const db = await getDb();
+    const entryId = req.params.entryId;
+    let objectId;
+    try {
+      objectId = new ObjectId(entryId);
+    } catch (e) {
+      objectId = null;
+    }
+    // Query for both ObjectId and string representations
+    const query = objectId
+      ? { $or: [ { valueChainEntryId: objectId }, { valueChainEntryId: entryId } ] }
+      : { valueChainEntryId: entryId };
+    const capabilities = await db.collection('Capabilities').find(query).toArray();
+    res.json(capabilities);
+  } catch (err) {
+    console.error('MongoDB Capabilities byEntryId fetch error:', err);
+    res.status(500).json({ error: 'Failed to fetch Capabilities by entryId.' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
