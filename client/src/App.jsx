@@ -14,6 +14,7 @@ import './App.css';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { getHomepageIndustriesFromMongo, getHomepageBusinessComplexityFromMongo } from './utils/mongoApi';
 import { getValueChainsByEntryId } from './utils/api.valuechains';
+import ValueChainReady from './components/ValueChainReady';
 
 function App() {
   // Use a single page state for clarity
@@ -255,30 +256,7 @@ function App() {
               );
             }
             if (page === 'ready') {
-              return (
-                <>
-                  <div style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    zIndex: 100,
-                    background: '#fff',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                    padding: '16px 0 8px 0',
-                    textAlign: 'right',
-                  }}>
-                    <h1 style={{ margin: 0, fontSize: '2em' }}>Value Chain Intelligence</h1>
-                    <h2 style={{ margin: 0, fontSize: '1.1em', fontWeight: 400 }}>Powered by Beyond Axis</h2>
-                  </div>
-                  <div style={{ height: 90 }} />
-                  <WizardProgress currentStep={4} styleOverride={{ margin: '0' }} />
-                  <div style={{ textAlign: 'center', marginTop: 80 }}>
-                    <h2>Value Chain Ready!</h2>
-                    <p>Your value chain has been successfully saved and assessed.</p>
-                  </div>
-                </>
-              );
+              return <ValueChainReady goToHome={goToHome} />;
             }
             if (page === 'strategicInitiative') {
               // Removed debug log for page render
