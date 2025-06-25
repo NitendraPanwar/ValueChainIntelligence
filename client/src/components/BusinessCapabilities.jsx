@@ -10,7 +10,7 @@ import CapabilityPopupModal from './CapabilityPopupModal';
 import { useValueChainData } from '../utils/useValueChainData';
 
 // Remove filterMaturityOnly from props, use local state
-function BusinessCapabilities({ businessType, onNext, userFlow, onBack, showCheckboxInFilteredView, onCapabilitySelect, selectedCapabilities, entryId, valueChainId, valueChainIds = [], valueChainNames = [] }) {
+function BusinessCapabilities({ businessType, onNext, userFlow, onBack, showCheckboxInFilteredView, onCapabilitySelect, selectedCapabilities, entryId, valueChainId, valueChainIds = [], valueChainNames = [], wizardStep, setWizardStep }) {
   // Use valueChainNames (array) and businessType for MongoDB query if provided, else fallback to userFlow.valueChainName
   const effectiveValueChainNames = valueChainNames.length > 0 ? valueChainNames : [userFlow.valueChainName || userFlow.name];
   const effectiveValueChainIds = valueChainIds.length > 0 ? valueChainIds : (valueChainId ? [valueChainId] : []);
@@ -249,7 +249,7 @@ function BusinessCapabilities({ businessType, onNext, userFlow, onBack, showChec
                 cursor: 'pointer',
                 marginRight: 24
               }}
-              onClick={() => setFilterMaturityOnly(false)}
+              onClick={() => { setFilterMaturityOnly(false); setWizardStep && setWizardStep(2); }}
             >
               Back
             </button>
@@ -266,7 +266,7 @@ function BusinessCapabilities({ businessType, onNext, userFlow, onBack, showChec
               boxShadow: '0 2px 8px rgba(43,92,184,0.12)',
               cursor: 'pointer'
             }}
-            onClick={() => setFilterMaturityOnly(true)}
+            onClick={() => { setFilterMaturityOnly(true); setWizardStep && setWizardStep(3); }}
             disabled={filterMaturityOnly}
           >
             Next

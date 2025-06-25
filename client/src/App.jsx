@@ -215,7 +215,7 @@ function App() {
               return (
                 <>
                   <div style={{ height: 90 }} />
-                  <WizardProgress currentStep={2} styleOverride={{ margin: '0' }} />
+                  <WizardProgress currentStep={wizardStep} styleOverride={{ margin: '0' }} />
                   <BusinessCapabilities
                     businessType={businessType}
                     onNext={() => {
@@ -223,12 +223,13 @@ function App() {
                       setPage('assessment');
                     }}
                     userFlow={userFlow}
-                    filterMaturityOnly={false}
                     entryId={entryId}
                     valueChainIds={valueChainIds}
                     valueChainNames={valueChainNames}
                     valueChainEntryId={entryId}
                     valueChainEntryName={userFlow.name}
+                    wizardStep={wizardStep}
+                    setWizardStep={setWizardStep}
                   />
                 </>
               );
