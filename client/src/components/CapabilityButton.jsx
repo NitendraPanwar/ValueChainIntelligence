@@ -23,7 +23,6 @@ function CapabilityButton({
   const vcKey = normalizeName(frameName);
   const capKey = normalizeName(cap.name);
   const maturity = capabilityMaturity[`${vcKey}||${capKey}`];
-  console.log('CapabilityButton maturity debug:', { vcKey, capKey, maturity, capabilityMaturity });
   let color = '#bbb';
   if (maturity === 'Low') color = 'red';
   else if (maturity === 'Medium') color = 'orange';

@@ -5,6 +5,7 @@ import { getValueChainEntryById } from '../utils/api.valuechainentries';
 import { getValueChainById } from '../utils/api.valuechains.mongo';
 import { getAllValueChainsRaw, deleteAllValueChains } from '../utils/api.valuechains.raw';
 import { deleteAllCapabilities } from '../utils/api.capabilities.raw';
+import { getCapabilitiesByEntryId } from '../utils/api';
 
 function ReadDataPage() {
   const [entries, setEntries] = useState([]);
@@ -26,6 +27,8 @@ function ReadDataPage() {
   const [allValueChainsRaw, setAllValueChainsRaw] = useState([]);
   const [allValueChainsRawLoading, setAllValueChainsRawLoading] = useState(false);
   const [allValueChainsRawError, setAllValueChainsRawError] = useState('');
+  const [rawValueChainsByEntryModal, setRawValueChainsByEntryModal] = useState({ show: false, data: null });
+  const [rawCapabilitiesByEntryModal, setRawCapabilitiesByEntryModal] = useState({ show: false, data: null });
 
   const handleShowEntries = async () => {
     setLoading(true);
@@ -161,6 +164,24 @@ function ReadDataPage() {
     }
   };
 
+  const handleShowRawValueChainsByEntry = async (entry) => {
+    try {
+      const data = await getValueChainsByEntryId(entry._id);
+      setRawValueChainsByEntryModal({ show: true, data });
+    } catch (err) {
+      setRawValueChainsByEntryModal({ show: true, data: { error: 'Failed to fetch value chains by entry', details: err?.message } });
+    }
+  };
+
+  const handleShowRawCapabilitiesByEntry = async (entry) => {
+    try {
+      const data = await getCapabilitiesByEntryId(entry._id);
+      setRawCapabilitiesByEntryModal({ show: true, data });
+    } catch (err) {
+      setRawCapabilitiesByEntryModal({ show: true, data: { error: 'Failed to fetch capabilities by entry', details: err?.message } });
+    }
+  };
+
   return (
     <div style={{ padding: 32 }}>
       <h2>Read Data Page</h2>
@@ -220,6 +241,20 @@ function ReadDataPage() {
                   title="Show raw MongoDB data for this entry"
                 >
                   Details
+                </button>
+                <button
+                  style={{ marginLeft: 6, padding: '2px 10px', fontSize: 13, borderRadius: 4, border: '1px solid #1890ff', background: '#e6f7ff', color: '#1890ff', cursor: 'pointer' }}
+                  onClick={() => handleShowRawValueChainsByEntry(entry)}
+                  title="Show raw value chains for this entry (calls getValueChainsByEntryId)"
+                >
+                  Show ValueChains (Raw)
+                </button>
+                <button
+                  style={{ marginLeft: 6, padding: '2px 10px', fontSize: 13, borderRadius: 4, border: '1px solid #722ed1', background: '#f9f0ff', color: '#722ed1', cursor: 'pointer' }}
+                  onClick={() => handleShowRawCapabilitiesByEntry(entry)}
+                  title="Show raw capabilities for this entry (calls getCapabilitiesByEntryId)"
+                >
+                  Show Capabilities (Raw)
                 </button>
                 {expandedIdx === idx && (
                   <div style={{ marginTop: 8, marginLeft: 12 }}>
@@ -322,6 +357,26 @@ function ReadDataPage() {
             <h3 style={{ marginTop: 0 }}>Raw Value Chain Data</h3>
             <pre style={{ background: '#f6f8fa', borderRadius: 4, padding: 12, fontSize: 13, color: '#333', overflowX: 'auto' }}>{JSON.stringify(rawValueChainModal.data, null, 2)}</pre>
             <button style={{ marginTop: 16, padding: '6px 18px', borderRadius: 5, background: '#722ed1', color: '#fff', border: 'none', fontWeight: 600, cursor: 'pointer' }} onClick={() => setRawValueChainModal({ show: false, data: null })}>Close</button>
+          </div>
+        </div>
+      )}
+      {/* Modal for raw value chains by entry data */}
+      {rawValueChainsByEntryModal.show && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.35)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setRawValueChainsByEntryModal({ show: false, data: null })}>
+          <div style={{ background: '#fff', borderRadius: 8, padding: 24, minWidth: 400, maxWidth: 700, maxHeight: '80vh', overflowY: 'auto', boxShadow: '0 4px 24px rgba(0,0,0,0.18)' }} onClick={e => e.stopPropagation()}>
+            <h3 style={{ marginTop: 0 }}>Raw Value Chains by EntryId</h3>
+            <pre style={{ background: '#f6f8fa', borderRadius: 4, padding: 12, fontSize: 13, color: '#333', overflowX: 'auto' }}>{JSON.stringify(rawValueChainsByEntryModal.data, null, 2)}</pre>
+            <button style={{ marginTop: 16, padding: '6px 18px', borderRadius: 5, background: '#1890ff', color: '#fff', border: 'none', fontWeight: 600, cursor: 'pointer' }} onClick={() => setRawValueChainsByEntryModal({ show: false, data: null })}>Close</button>
+          </div>
+        </div>
+      )}
+      {/* Modal for raw capabilities by entry data */}
+      {rawCapabilitiesByEntryModal.show && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.35)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setRawCapabilitiesByEntryModal({ show: false, data: null })}>
+          <div style={{ background: '#fff', borderRadius: 8, padding: 24, minWidth: 400, maxWidth: 700, maxHeight: '80vh', overflowY: 'auto', boxShadow: '0 4px 24px rgba(0,0,0,0.18)' }} onClick={e => e.stopPropagation()}>
+            <h3 style={{ marginTop: 0 }}>Raw Capabilities by EntryId</h3>
+            <pre style={{ background: '#f6f8fa', borderRadius: 4, padding: 12, fontSize: 13, color: '#333', overflowX: 'auto' }}>{JSON.stringify(rawCapabilitiesByEntryModal.data, null, 2)}</pre>
+            <button style={{ marginTop: 16, padding: '6px 18px', borderRadius: 5, background: '#faad14', color: '#fff', border: 'none', fontWeight: 600, cursor: 'pointer' }} onClick={() => setRawCapabilitiesByEntryModal({ show: false, data: null })}>Close</button>
           </div>
         </div>
       )}
