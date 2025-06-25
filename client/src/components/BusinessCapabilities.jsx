@@ -9,7 +9,8 @@ import FrameSection from './FrameSection';
 import CapabilityPopupModal from './CapabilityPopupModal';
 import { useValueChainData } from '../utils/useValueChainData';
 
-function BusinessCapabilities({ businessType, onNext, userFlow, filterMaturityOnly, onBack, showCheckboxInFilteredView, onCapabilitySelect, selectedCapabilities, entryId, valueChainId, valueChainIds = [], valueChainNames = [] }) {
+// Remove filterMaturityOnly from props, use local state
+function BusinessCapabilities({ businessType, onNext, userFlow, onBack, showCheckboxInFilteredView, onCapabilitySelect, selectedCapabilities, entryId, valueChainId, valueChainIds = [], valueChainNames = [] }) {
   // Use valueChainNames (array) and businessType for MongoDB query if provided, else fallback to userFlow.valueChainName
   const effectiveValueChainNames = valueChainNames.length > 0 ? valueChainNames : [userFlow.valueChainName || userFlow.name];
   const effectiveValueChainIds = valueChainIds.length > 0 ? valueChainIds : (valueChainId ? [valueChainId] : []);
@@ -23,6 +24,14 @@ function BusinessCapabilities({ businessType, onNext, userFlow, filterMaturityOn
   const [showAssessment, setShowAssessment] = useState(false);
   const [capabilityMaturity, setCapabilityMaturity] = useState({}); // { capName: maturityLevel }
   const [displayMode, setDisplayMode] = useState('capability'); // 'capability' | 'business' | 'technology'
+  const [filterMaturityOnly, setFilterMaturityOnly] = useState(false);
+
+  // Move normalizeName to top-level so it can be used everywhere
+  function normalizeName(name) {
+    return name
+      ? name.toString().trim().toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ')
+      : '';
+  }
 
   // Load capability maturity from MongoDB by entryId
   useEffect(() => {
@@ -30,11 +39,6 @@ function BusinessCapabilities({ businessType, onNext, userFlow, filterMaturityOn
     getCapabilitiesByEntryId(entryId)
       .then(caps => {
         const capMaturity = {};
-        function normalizeName(name) {
-          return name
-            ? name.toString().trim().toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ')
-            : '';
-        }
         caps.forEach(cap => {
           const vcKey = normalizeName(cap.valueChainName || '');
           const capKey = normalizeName(cap.name || '');
@@ -87,13 +91,14 @@ function BusinessCapabilities({ businessType, onNext, userFlow, filterMaturityOn
   // Filter capabilities if filterMaturityOnly is true
   const filteredCapabilitiesByFrame = React.useMemo(() => {
     if (!filterMaturityOnly) return capabilitiesByFrame;
-    // Only include capabilities with a maturity level set
+    // Only include capabilities with a maturity level set (Low, Medium, High)
     const filtered = {};
     Object.entries(capabilitiesByFrame).forEach(([frame, caps]) => {
       filtered[frame] = caps.filter(cap => {
         const vcKey = normalizeName(frame.toString());
         const capKey = normalizeName(cap.name.toString());
-        return capabilityMaturity[`${vcKey}||${capKey}`];
+        const maturity = capabilityMaturity[`${vcKey}||${capKey}`];
+        return maturity === 'Low' || maturity === 'Medium' || maturity === 'High';
       });
     });
     return filtered;
@@ -229,7 +234,44 @@ function BusinessCapabilities({ businessType, onNext, userFlow, filterMaturityOn
             ))}
           </div>
         </div>
-        {/* ...existing code... */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '32px 0 0 0', position: 'fixed', bottom: 32, right: 32, zIndex: 200 }}>
+          {filterMaturityOnly && (
+            <button
+              style={{
+                padding: '12px 32px',
+                fontSize: '1.1em',
+                fontWeight: 600,
+                borderRadius: 8,
+                background: '#2b5cb8',
+                color: '#fff',
+                border: 'none',
+                boxShadow: '0 2px 8px rgba(43,92,184,0.12)',
+                cursor: 'pointer',
+                marginRight: 24
+              }}
+              onClick={() => setFilterMaturityOnly(false)}
+            >
+              Back
+            </button>
+          )}
+          <button
+            style={{
+              padding: '12px 32px',
+              fontSize: '1.1em',
+              fontWeight: 600,
+              borderRadius: 8,
+              background: '#2b5cb8',
+              color: '#fff',
+              border: 'none',
+              boxShadow: '0 2px 8px rgba(43,92,184,0.12)',
+              cursor: 'pointer'
+            }}
+            onClick={() => setFilterMaturityOnly(true)}
+            disabled={filterMaturityOnly}
+          >
+            Next
+          </button>
+        </div>
       </div>
       <CapabilityPopupModal
         popupInfo={popupInfo}
