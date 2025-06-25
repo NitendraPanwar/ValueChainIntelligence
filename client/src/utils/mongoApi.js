@@ -62,8 +62,9 @@ export async function getValueChainMasterFromMongo() {
   // Use actual MongoDB column names
   const valueChainCol = 'Value Chain Stage';
   const descCol = 'Description';
+  // Map to expected property for HomePage dropdown
   return res.data.map(row => ({
-    valueChain: row[valueChainCol] || '',
+    valueChainEntryName: row[valueChainCol] || '',
     description: row[descCol] || ''
   }));
 }

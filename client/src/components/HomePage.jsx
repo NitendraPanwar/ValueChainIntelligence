@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import InlineInfoIcon from './InlineInfoIcon';
 import { saveSubmission, getSubmissions } from '../utils/api';
-import { getHomepageIndustriesFromMongo, getHomepageBusinessComplexityFromMongo, getValueChainMasterFromMongo } from '../utils/mongoApi';
+import { getHomepageIndustriesFromMongo, getHomepageBusinessComplexityFromMongo } from '../utils/mongoApi';
 import { getAllValueChainEntries } from '../utils/api.valuechainentries';
 import { useNavigate } from 'react-router-dom';
 
@@ -45,10 +45,10 @@ function HomePage({ onOk }) {
     }
   }, [showAdd, currentButtonLabel]);
 
-  // Fetch value chain master entries from MongoDB for Strategic Initiative
+  // Fetch value chain entries for Strategic Initiative from the same endpoint as ReadDataPage
   useEffect(() => {
     if (showPopup && currentButtonLabel === 'Strategic Initiative') {
-      getValueChainMasterFromMongo().then(entries => {
+      getAllValueChainEntries().then(entries => {
         setValueChainMasterEntries(entries);
       });
     }
@@ -246,11 +246,12 @@ function HomePage({ onOk }) {
                   <select value={selectedValueChainEntry} onChange={e => setSelectedValueChainEntry(e.target.value)} style={{ flex: 1 }}>
                     <option value="">Select...</option>
                     {valueChainMasterEntries.map((entry, idx) => {
-                      // Only show if valueChainEntryName exists (frame name)
-                      if (!entry.valueChainEntryName) return null;
+                      // Use entry.name if available, fallback to valueChainEntryName or _id
+                      const displayName = entry.name || entry.valueChainEntryName || entry._id || '';
+                      if (!displayName) return null;
                       return (
-                        <option key={idx} value={entry.valueChainEntryName}>
-                          {entry.valueChainEntryName}{entry.description ? ` - ${entry.description}` : ''}
+                        <option key={entry._id || idx} value={displayName}>
+                          {displayName}{entry.description ? ` - ${entry.description}` : ''}
                         </option>
                       );
                     })}
@@ -260,11 +261,19 @@ function HomePage({ onOk }) {
                   <button
                     className="frame-btn"
                     onClick={() => {
-                      const entry = valueChainMasterEntries.find(e => e.valueChainEntryName === selectedValueChainEntry);
+                      const entry = valueChainMasterEntries.find(e => {
+                        // Match by name, valueChainEntryName, or _id
+                        return (
+                          e.name === selectedValueChainEntry ||
+                          e.valueChainEntryName === selectedValueChainEntry ||
+                          e._id === selectedValueChainEntry
+                        );
+                      });
                       setShowPopup(false);
                       setShowAdd(false);
                       if (entry) {
-                        onOk('', entry.valueChainEntryName, 'Strategic Initiative', true);
+                        // Pass entry details to onOk for navigation
+                        onOk(entry.businessType || '', entry.name || entry.valueChainEntryName || '', 'Strategic Initiative', true, entry._id);
                       }
                     }}
                     disabled={!selectedValueChainEntry}
