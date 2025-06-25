@@ -138,10 +138,11 @@ function App() {
         <Route path="*" element={
           (() => {
             if (page === 'home') {
-              return <HomePage onOk={(selectedType, name, label, directToBlocks) => {
+              return <HomePage onOk={(selectedType, name, label, directToBlocks, entryId) => {
                 setUserFlow({ name, businessType: selectedType, label, valueChainName: name });
                 setPreselectedBusinessType(selectedType);
                 setWizardStep(0);
+                if (entryId) setEntryId(entryId); // <-- set entryId if provided
                 if (label === 'Strategic Initiative' && directToBlocks) {
                   setPage('strategicInitiative');
                 } else if (directToBlocks) {

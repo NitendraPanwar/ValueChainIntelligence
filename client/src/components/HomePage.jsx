@@ -207,7 +207,7 @@ function HomePage({ onOk }) {
               style={{ width: 240, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
               onClick={() => {
                 setSelectedEntry(null);
-                onOk(entry.businessType, entry.name, 'Value chain', true);
+                onOk(entry.businessType, entry.name, 'Value chain', true, entry._id); // <-- pass entry._id
               }}
             >
               <span>{entry.name}</span>
