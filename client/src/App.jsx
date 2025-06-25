@@ -212,11 +212,12 @@ function App() {
               if (preselectedBusinessType) {
                 businessType = preselectedBusinessType;
               }
-              // Pass valueChainIds and valueChainNames arrays to BusinessCapabilities
+              // If user lands directly on businessCapabilities from homepage, set wizardStep to 2
+              const effectiveWizardStep = wizardStep === 0 ? 2 : wizardStep;
               return (
                 <>
                   <div style={{ height: 90 }} />
-                  <WizardProgress currentStep={wizardStep} styleOverride={{ margin: '0' }} />
+                  <WizardProgress currentStep={effectiveWizardStep} styleOverride={{ margin: '0' }} />
                   <BusinessCapabilities
                     businessType={businessType}
                     onNext={() => {
@@ -229,7 +230,7 @@ function App() {
                     valueChainNames={valueChainNames}
                     valueChainEntryId={entryId}
                     valueChainEntryName={userFlow.name}
-                    wizardStep={wizardStep}
+                    wizardStep={effectiveWizardStep}
                     setWizardStep={setWizardStep}
                   />
                 </>
