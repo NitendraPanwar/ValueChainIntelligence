@@ -1,22 +1,51 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import CapabilityButton from './CapabilityButton';
 import { getMaturityNumbers } from '../utils/maturityApi';
+import { getCapabilityById, getCapabilityByNameAndEntry } from '../utils/api.capabilities';
 import GaugeChart from '../components/GaugeChart';
 
-function FrameSection({
-  frame,
-  capabilities,
-  displayMode,
-  capabilityMaturity,
-  popupInfo,
-  setPopupInfo,
-  setHoverInfo,
-  setIsExpanded,
-  setShowAssessment,
-  showCheckboxInFilteredView,
-  onCapabilitySelect,
-  selectedCapabilities
-}) {
+const FrameSection = (props) => {
+  const {
+    frame,
+    capabilities,
+    displayMode,
+    capabilityMaturity,
+    popupInfo,
+    setPopupInfo,
+    setHoverInfo,
+    setIsExpanded,
+    setShowAssessment,
+    showCheckboxInFilteredView,
+    onCapabilitySelect,
+    selectedCapabilities
+  } = props;
+
+  const capabilityName = props.capabilityName || props.capability?.name;
+  const valueChainEntryName = props.valueChainEntryName || props.valueChainEntry?.name;
+
+  useEffect(() => {
+    if (!capabilityName || !valueChainEntryName) {
+      return;
+    }
+    getCapabilityByNameAndEntry(capabilityName, valueChainEntryName)
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          const capabilityDoc = data[0];
+          setPopupInfo({
+            ...popupInfo,
+            businessMaturity: capabilityDoc.businessMaturity || 'Not available',
+            technologyMaturity: capabilityDoc.technologyMaturity || 'Not available',
+            businessOwner: capabilityDoc.businessOwner || 'Not available',
+            technologyOwner: capabilityDoc.techOwner || 'Not available',
+            maturityLevel: capabilityDoc.maturityLevel || 'Not available' // Ensure maturityLevel is passed correctly
+          });
+        }
+      })
+      .catch((err) => {
+        console.error('[FrameSection] Error in getCapabilityByNameAndEntry:', err);
+      });
+  }, [capabilityName, valueChainEntryName]);
+
   return (
     <div className="frame horizontal-frame">
       <div className="frame-content">
@@ -53,28 +82,25 @@ function FrameSection({
                 setShowAssessment(false); // Reset assessment state
               }}
               onClick={async e => {
-                e.preventDefault();
-                e.stopPropagation();
-                // Only show popup if maturity is Low, Medium, or High
-                const vcKey = (frame.name || '').toString().trim().toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ');
-                const capKey = (cap.name || '').toString().trim().toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ');
-                const maturity = capabilityMaturity[`${vcKey}||${capKey}`];
-                const businessMaturity = capabilityMaturity[`${vcKey}||${capKey}|business`] || 'Not available';
-                const technologyMaturity = capabilityMaturity[`${vcKey}||${capKey}|technology`] || 'Not available';
-                // Owners (if available on cap)
-                const businessOwner = cap.businessOwner || 'Not available';
-                const technologyOwner = cap.technologyOwner || 'Not available';
-                if (["Low", "Medium", "High"].includes(maturity)) {
-                  // Query MongoDB for maturity numbers and log them
+                let capabilityDoc = null;
+
+                if (frame.valueChainEntryName && cap.name) {
+                  const capabilityDocs = await getCapabilityByNameAndEntry(cap.name, frame.valueChainEntryName);
+
+                  if (Array.isArray(capabilityDocs) && capabilityDocs.length > 0) {
+                    capabilityDoc = capabilityDocs[0];
+                  }
+                }
+
+                if (capabilityDoc) {
+                  const { businessMaturity, technologyMaturity, businessOwner, techOwner, ...otherFields } = capabilityDoc;
                   const { businessNumber, technologyNumber } = await getMaturityNumbers(businessMaturity, technologyMaturity);
-                  console.log('Business Maturity Number:', businessNumber);
-                  console.log('Technology Maturity Number:', technologyNumber);
+
                   setPopupInfo({
                     show: true,
                     x: e.clientX,
                     y: e.clientY,
-                    popupStep: 'gauge', // Step for gauge chart popup (was 'expanded')
-                    // No width override here; gauge chart popup uses default/modal width
+                    popupStep: 'gauge',
                     text: (
                       <div style={{
                         minWidth: 700,
@@ -93,21 +119,21 @@ function FrameSection({
                         <div style={{display: 'flex', alignItems: 'flex-start', gap: 0, justifyContent: 'center', margin: '0 0 18px 0', padding: 0}}>
                           {/* Business Gauge */}
                           <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, paddingLeft: 0, paddingRight: 0}}>
-                            <GaugeChart value={typeof businessNumber === 'number' ? businessNumber : 0} min={0} max={5} label="Business Maturity" width={220} />
+                            <GaugeChart value={typeof businessNumber === 'number' ? businessNumber : 0} min={0} max={5} label="Business Maturity" width={220} type="business" businessOwner={businessOwner} technologyOwner={techOwner} valueChainEntryId={frame.valueChainEntryId} valueChainEntryName={frame.valueChainEntryName} {...otherFields} />
                           </div>
                           {/* Technology Gauge */}
                           <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, paddingLeft: 0, paddingRight: 0}}>
-                            <GaugeChart value={typeof technologyNumber === 'number' ? technologyNumber : 0} min={0} max={5} label="Technology Maturity" width={220} />
+                            <GaugeChart value={typeof technologyNumber === 'number' ? technologyNumber : 0} min={0} max={5} label="Technology Maturity" width={220} type="technology" businessOwner={businessOwner} technologyOwner={techOwner} valueChainEntryId={frame.valueChainEntryId} valueChainEntryName={frame.valueChainEntryName} {...otherFields} />
                           </div>
                         </div>
                         {/* Third frame: Owners */}
                         <div style={{fontWeight: 600, marginBottom: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', borderTop: '1px solid #eee', paddingTop: 12}}>
                           <div>Business Owner: <b>{businessOwner}</b></div>
-                          <div>Technology Owner: <b>{technologyOwner}</b></div>
+                          <div>Technology Owner: <b>{techOwner}</b></div>
                         </div>
                         {/* Fourth frame: Maturity Level */}
                         <div style={{fontWeight: 600, textAlign: 'center', borderTop: '1px solid #eee', paddingTop: 12, fontSize: 18}}>
-                          Maturity Level: <b>{maturity}</b>
+                          Maturity Level: <b>{popupInfo.maturityLevel || 'Not available'}</b>
                         </div>
                       </div>
                     )
