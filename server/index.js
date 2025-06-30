@@ -467,7 +467,14 @@ app.get('/api/capabilities/:valueChainId', async (req, res) => {
   try {
     const db = await getDb();
     const valueChainId = req.params.valueChainId;
-    const capabilities = await db.collection('Capabilities').find({ valueChainId: new ObjectId(valueChainId) }).toArray();
+    let query;
+    // Only use ObjectId if valueChainId is a valid ObjectId string
+    if (/^[a-fA-F0-9]{24}$/.test(valueChainId)) {
+      query = { valueChainId: new ObjectId(valueChainId) };
+    } else {
+      query = { valueChainId: valueChainId };
+    }
+    const capabilities = await db.collection('Capabilities').find(query).toArray();
     res.json(capabilities);
   } catch (err) {
     console.error('MongoDB Capabilities fetch error:', err);
@@ -627,6 +634,62 @@ app.get('/api/capabilities/byEntryId/:entryId', async (req, res) => {
   } catch (err) {
     console.error('MongoDB Capabilities byEntryId fetch error:', err);
     res.status(500).json({ error: 'Failed to fetch Capabilities by entryId.' });
+  }
+});
+
+// Get a single Capability by its _id
+app.get('/api/capabilities/:id', async (req, res) => {
+  try {
+    const db = await getDb();
+    const { id } = req.params;
+    const doc = await db.collection('Capabilities').findOne({ _id: new ObjectId(id) });
+    if (!doc) return res.status(404).json({ error: 'Not found' });
+    res.json(doc);
+  } catch (err) {
+    console.error('Error fetching capability by id:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// New route: fetch capability by name and valueChainEntryName
+app.get('/api/capabilities/by-name-and-entry', async (req, res) => {
+  const { capabilityName, valueChainEntryName } = req.query;
+  console.log('[API] /api/capabilities/by-name-and-entry: Received call with query:', { capabilityName, valueChainEntryName });
+  if (!capabilityName && !valueChainEntryName) {
+    console.log('[API] /api/capabilities/by-name-and-entry: Missing capabilityName or valueChainEntryName');
+    return res.status(400).json({ error: 'Provide at least one of capabilityName or valueChainEntryName' });
+  }
+  try {
+    const db = await getDb();
+    const query = {};
+    if (capabilityName) query.name = { $regex: capabilityName, $options: 'i' };
+    if (valueChainEntryName) query.valueChainEntryName = { $regex: valueChainEntryName, $options: 'i' };
+    console.log('[API] /api/capabilities/by-name-and-entry: Query:', query);
+    const docs = await db.collection('Capabilities').find(query).toArray();
+    console.log('[API] /api/capabilities/by-name-and-entry: Found docs:', docs);
+    res.json(docs);
+  } catch (err) {
+    console.error('[API] /api/capabilities/by-name-and-entry error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// --- DEBUG: List Capabilities by name or valueChainEntryName (TEMPORARY) ---
+app.get('/api/capabilities/debug/by-name-or-entry', async (req, res) => {
+  const { capabilityName, valueChainEntryName } = req.query;
+  if (!capabilityName && !valueChainEntryName) {
+    return res.status(400).json({ error: 'Provide at least one of capabilityName or valueChainEntryName' });
+  }
+  try {
+    const db = await getDb();
+    const query = {};
+    if (capabilityName) query.name = capabilityName;
+    if (valueChainEntryName) query.valueChainEntryName = valueChainEntryName;
+    const docs = await db.collection('Capabilities').find(query).toArray();
+    res.json({ count: docs.length, docs });
+  } catch (err) {
+    console.error('[DEBUG] /api/capabilities/debug/by-name-or-entry error:', err);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

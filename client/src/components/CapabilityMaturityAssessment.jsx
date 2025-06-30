@@ -36,7 +36,8 @@ const CapabilityMaturityAssessment = ({ valueChainName, capabilityName, valueCha
     getMaturityLevelsFromMongo().then(levels => {
       setBusinessMaturityLevels(levels.business);
       setTechnologyMaturityLevels(levels.technology);
-      setMapping(levels.mapping);
+      // Use levels.rows for robust lookups (backward compatible: if mapping exists, use it, else fallback to rows)
+      setMapping(levels.mapping || levels.rows || []);
     });
     getAllMaturityDescriptionsFromMongo().then(setMaturityDescriptions);
   }, []);
@@ -101,13 +102,6 @@ const CapabilityMaturityAssessment = ({ valueChainName, capabilityName, valueCha
 
   return (
     <div style={{ width: '100%', minHeight: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', padding: 24 }}>
-      {/* Show key identifiers for debugging/visibility */}
-      <div style={{ marginBottom: 16, background: '#f3f6fa', border: '1px solid #b6c2d6', borderRadius: 8, padding: 12, fontSize: 15, color: '#2b5cb8' }}>
-        <div><b>valueChainId:</b> {valueChainId}</div>
-        <div><b>valueChainEntryId:</b> {valueChainEntryId}</div>
-        <div><b>valueChainEntryName:</b> {valueChainEntryName}</div>
-        <div><b>valueChainName:</b> {valueChainName}</div>
-      </div>
       {/* Top left: Value Chain name and Capability name */}
       <div style={{ fontWeight: 700, fontSize: '1.1em', margin: '0 0 8px 4px', color: '#2b5cb8' }}>
         {valueChainName} : {capabilityName}

@@ -26,6 +26,7 @@ function CapabilityPopupModal({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
+        overflow: 'auto', // Allow modal to expand to full viewport width
       }}
     >
       <div
@@ -37,14 +38,18 @@ function CapabilityPopupModal({
           boxShadow: '0 4px 24px rgba(0,0,0,0.18)',
           padding: '24px 32px 18px 24px',
           fontSize: '1.1em',
-          minWidth: isExpanded ? '90vw' : 220,
-          maxWidth: isExpanded ? '90vw' : 320,
+          minWidth: popupInfo.popupStep === 'description' ? 350 : (popupInfo.popupStep === 'expanded' ? 1200 : 700),
+          maxWidth: popupInfo.popupStep === 'description' ? 350 : (popupInfo.popupStep === 'expanded' ? 1200 : 700),
+          width: popupInfo.popupStep === 'description' ? 350 : (popupInfo.popupStep === 'expanded' ? 1200 : 700),
           minHeight: isExpanded ? '80vh' : undefined,
+          maxHeight: '90vh', // Prevent modal from exceeding viewport height
           position: 'relative',
           transition: 'all 0.2s',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'flex-start',
+          overflowY: 'auto', // Enable vertical scroll if needed
+          overflowX: 'hidden',
         }}
       >
         {isExpanded ? (
@@ -75,33 +80,45 @@ function CapabilityPopupModal({
         ) : (
           popupInfo.text
         )}
-        <button
-          onClick={() => setIsExpanded(exp => !exp)}
-          style={{
-            position: 'absolute',
-            top: 0,
-            right: 36,
-            width: 32,
-            height: 32,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: 0,
-            background: 'transparent',
-            border: 'none',
-            fontSize: 22,
-            lineHeight: 1,
-            color: '#888',
-            cursor: 'pointer',
-            fontWeight: 700,
-            zIndex: 4000,
-            transform: 'translateY(1px)'
-          }}
-          aria-label="Expand"
-          title={isExpanded ? 'Collapse' : 'Expand'}
-        >
-          ⛶
-        </button>
+        {/* Only show expand button if not gauge popup */}
+        {popupInfo.popupStep !== 'gauge' && (
+          <button
+            onClick={() => {
+              setIsExpanded(exp => {
+                const next = !exp;
+                setPopupInfo(info => ({
+                  ...info,
+                  popupStep: next ? 'expanded' : 'description'
+                }));
+                return next;
+              });
+            }}
+            style={{
+              position: 'absolute',
+              top: 0,
+              right: 36,
+              width: 32,
+              height: 32,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: 0,
+              background: 'transparent',
+              border: 'none',
+              fontSize: 22,
+              lineHeight: 1,
+              color: '#888',
+              cursor: 'pointer',
+              fontWeight: 700,
+              zIndex: 4000,
+              transform: 'translateY(1px)'
+            }}
+            aria-label="Expand"
+            title={isExpanded ? 'Collapse' : 'Expand'}
+          >
+            ⛶
+          </button>
+        )}
         <button
           onClick={() => {
             setPopupInfo({ show: false, text: '' });

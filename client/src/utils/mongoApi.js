@@ -62,8 +62,9 @@ export async function getValueChainMasterFromMongo() {
   // Use actual MongoDB column names
   const valueChainCol = 'Value Chain Stage';
   const descCol = 'Description';
+  // Map to expected property for HomePage dropdown
   return res.data.map(row => ({
-    valueChain: row[valueChainCol] || '',
+    valueChainEntryName: row[valueChainCol] || '',
     description: row[descCol] || ''
   }));
 }
@@ -122,44 +123,42 @@ export async function getCapabilityDetailsFromMongo(valueChainName, capabilityNa
   return match || null;
 }
 
-// Fetch unique business and technology maturity levels from MongoDB Capability Maturity Model table
+// Fetch unique business and technology maturity levels and return all rows from MongoDB Capability Maturity Model table
 export async function getMaturityLevelsFromMongo() {
   const res = await readSheetFromMongo('Capability Maturity Model');
-  if (!res.success || !Array.isArray(res.data)) return { business: [], technology: [], mapping: [] };
+  if (!res.success || !Array.isArray(res.data)) return { business: [], technology: [], rows: [] };
   // Find columns (case-insensitive)
   const firstRow = res.data[0] || {};
   const businessCol = Object.keys(firstRow).find(k => k && k.toString().trim().toLowerCase() === 'business maturity levels');
   const techCol = Object.keys(firstRow).find(k => k && k.toString().trim().toLowerCase() === 'technology maturity levels');
-  const labelCol = Object.keys(firstRow).find(k => k && k.toString().trim().toLowerCase() === 'maturity level label');
 
   const businessSet = new Set();
   const technologySet = new Set();
-  const mapping = [];
   for (const row of res.data) {
     if (businessCol && row[businessCol]) businessSet.add(row[businessCol]);
     if (techCol && row[techCol]) technologySet.add(row[techCol]);
-    if (businessCol && techCol && labelCol && row[businessCol] && row[techCol] && row[labelCol]) {
-      mapping.push({
-        business: row[businessCol],
-        technology: row[techCol],
-        label: row[labelCol]
-      });
-    }
   }
-  return { business: Array.from(businessSet), technology: Array.from(technologySet), mapping };
+  // Return all rows for robust lookups
+  return { business: Array.from(businessSet), technology: Array.from(technologySet), rows: res.data };
 }
 
-// Lookup maturity level label from mapping
+// Lookup maturity level label from mapping (robust for new rows-based structure)
 export function lookupMaturityLevelLabel(mapping, business, technology) {
   if (!business || !technology) return '';
   const b = business.trim().toLowerCase();
   const t = technology.trim().toLowerCase();
-  const found = mapping.find(row =>
-    row.business && row.technology &&
-    row.business.toString().trim().toLowerCase() === b &&
-    row.technology.toString().trim().toLowerCase() === t
-  );
-  return found && found.label !== undefined && found.label !== null ? String(found.label) : '';
+  // Try all possible field names for robust matching
+  const found = mapping.find(row => {
+    // Accept both string and number fields for business/technology
+    const businessVal = (row['Business Maturity Level'] || row['business maturity level'] || row['Business Maturity Levels'] || row['business maturity levels'] || row['Business Maturity'] || row['business maturity'] || row['business'] || '').toString().trim().toLowerCase();
+    const techVal = (row['Technology Maturity Level'] || row['technology maturity level'] || row['Technology Maturity Levels'] || row['technology maturity levels'] || row['Technology Maturity'] || row['technology maturity'] || row['technology'] || '').toString().trim().toLowerCase();
+    return businessVal === b && techVal === t;
+  });
+  // Try all possible label fields
+  const label = found && (found['Maturity Level Label'] || found['maturity level label'] || found['Business Maturity Level'] || found['business maturity level'] || found['Technology Maturity Level'] || found['technology maturity level'])
+    ? (found['Maturity Level Label'] || found['maturity level label'] || found['Business Maturity Level'] || found['business maturity level'] || found['Technology Maturity Level'] || found['technology maturity level'])
+    : '';
+  return label;
 }
 
 // Fetch description for a given business maturity level

@@ -34,7 +34,7 @@ const ExpandedCapabilityView = ({ valueChainName, capabilityName, description, o
   const renderMultiline = val => (val || '').split(',').map((v, i) => <div key={i}>{v.trim()}</div>);
 
   return (
-    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start' }}>
+    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', position: 'relative' }}>
       {/* Top left: Value Chain name and Capability name */}
       <div style={{ fontWeight: 700, fontSize: '1.1em', margin: '0 0 8px 4px', color: '#2b5cb8' }}>
         {valueChainName} : {capabilityName}
@@ -80,9 +80,9 @@ const ExpandedCapabilityView = ({ valueChainName, capabilityName, description, o
           </div>
         </div>
       </div>
-      {/* Bottom right button - now floating */}
+      {/* Bottom right button - now floating inside popup */}
       <div style={{
-        position: 'fixed',
+        position: 'absolute',
         bottom: 32,
         right: 48,
         zIndex: 5000,
