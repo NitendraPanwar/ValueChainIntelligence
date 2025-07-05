@@ -67,12 +67,14 @@ function ValueChain({ selected, frames, headers, onBack, onNextPage, preselected
     // Fetch all value chain master data from MongoDB (no filter)
     getValueChainMasterFromMongo()
       .then(found => {
+        console.log('[ValueChain] getValueChainMasterFromMongo result:', found);
         setVcName(found);
         setLoading(false);
       })
-      .catch(() => {
+      .catch((err) => {
         setError('Failed to load Value Chain Master data from MongoDB.');
         setLoading(false);
+        console.error('[ValueChain] Error loading Value Chain Master:', err);
       });
   }, [frames, headers, selected]);
 
@@ -90,11 +92,14 @@ function ValueChain({ selected, frames, headers, onBack, onNextPage, preselected
       <div className="frames horizontal-scroll" style={{ marginBottom: 24, paddingLeft: 0, marginLeft: 0, justifyContent: 'flex-start' }}>
         {Array.isArray(vcName) && vcName.length > 0 &&
           vcName.map((item, idx) => {
-            // Find the frameIdx and btnIdx for this item
+            // Support both new and existing value chain objects
+            const valueChainName = item.valueChainEntryName || item.Name || item.name || '';
+            const description = item.description || item.Description || '';
+            // Find the frameIdx and btnIdx for this item (if needed for highlight logic)
             let frameIdx = -1, btnIdx = -1;
             headers.forEach((header, fIdx) => {
               if (header && header.trim().toLowerCase() === 'industry') {
-                const bIdx = frames[fIdx]?.findIndex(val => val === item.valueChain);
+                const bIdx = frames[fIdx]?.findIndex(val => val === valueChainName);
                 if (bIdx !== -1 && bIdx !== undefined) {
                   frameIdx = fIdx;
                   btnIdx = bIdx;
@@ -105,7 +110,7 @@ function ValueChain({ selected, frames, headers, onBack, onNextPage, preselected
             let isHighlighted = false;
             if (Object.values(selected).some(Boolean)) {
               isHighlighted = selected[`${frameIdx}-${btnIdx}`] === true;
-            } else if (preselectedBusinessType && item.valueChain === preselectedBusinessType) {
+            } else if (preselectedBusinessType && valueChainName === preselectedBusinessType) {
               isHighlighted = true;
             }
             return (
@@ -117,12 +122,12 @@ function ValueChain({ selected, frames, headers, onBack, onNextPage, preselected
                       style={{ width: '100%', marginBottom: 8, background: isHighlighted ? '#4caf50' : undefined, color: isHighlighted ? '#fff' : undefined }}
                       disabled
                     >
-                      {item.valueChain}
+                      {valueChainName}
                       <span style={{ position: 'absolute', right: 2, bottom: 10 }}>
                         <InlineInfoIcon
                           onMouseEnter={e => {
                             const rect = e.currentTarget.getBoundingClientRect();
-                            setHoverInfo({ show: true, text: item.description, x: rect.right, y: rect.bottom });
+                            setHoverInfo({ show: true, text: description, x: rect.right, y: rect.bottom });
                           }}
                           onMouseLeave={() => setHoverInfo({ show: false, text: '', x: 0, y: 0 })}
                           style={{ fontSize: 16, width: 16, height: 16 }}
@@ -131,7 +136,7 @@ function ValueChain({ selected, frames, headers, onBack, onNextPage, preselected
                     </button>
                   </div>
                 </div>
-                <StarRating maxStars={4} rating={starRatings[item.valueChain] || 0} onChange={r => setStarRatings(prev => ({ ...prev, [item.valueChain]: r }))} />
+                <StarRating maxStars={4} rating={starRatings[valueChainName] || 0} onChange={r => setStarRatings(prev => ({ ...prev, [valueChainName]: r }))} />
               </div>
             );
           })
@@ -184,10 +189,13 @@ function ValueChain({ selected, frames, headers, onBack, onNextPage, preselected
       <button className="lets-go-btn" onClick={onBack}>Back</button>
       <button className="lets-go-btn" style={{ marginLeft: 16 }} onClick={async () => {
         // Save value chain names and star ratings as ValueChain array
-        const valueChainArr = vcName.map(item => ({ Name: item.valueChain, StarRating: starRatings[item.valueChain] || 0 }));
+        const valueChainArr = vcName.map(item => {
+          const valueChainName = item.valueChainEntryName || item.Name || item.name || '';
+          return { Name: valueChainName, StarRating: starRatings[valueChainName] || 0 };
+        });
         // Pass all value chains (not just the first) to userFlow
         if (onSetValueChainName && vcName.length > 0) {
-          onSetValueChainName(vcName.map(item => item.valueChain));
+          onSetValueChainName(vcName.map(item => item.valueChainEntryName || item.Name || item.name || ''));
         }
         // Use new API: save value chains with parent entryId and entryName
         if (entryId) {

@@ -10,8 +10,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "mongodb": "^6.17.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-flow-renderer": "^10.3.17",
+    "react-router-dom": "^7.6.3",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

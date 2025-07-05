@@ -17,7 +17,8 @@ export async function getCapabilityById(capabilityId) {
   }
 }
 
-const backendUrl = 'http://localhost:4000'; // Backend server URL
+// Use relative path for API base URL to support both local and Codespaces
+const backendUrl = '';
 
 // Fetch a capability by name and valueChainEntryName
 export async function getCapabilityByNameAndEntry(capabilityName, valueChainEntryName) {
