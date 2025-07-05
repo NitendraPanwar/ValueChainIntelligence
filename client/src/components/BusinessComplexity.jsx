@@ -77,9 +77,9 @@ function BusinessComplexity({
         Let’s build your future ready value chain!
       </div>
       {error && <div style={{ color: 'red', margin: '20px 0' }}>{error}</div>}
-      <div className="frames">
-        {/* Four columns: Industry, Business Complexity, Number of Employees, Annual Revenues (US$) */}
-        {frames.slice(0, 4).map((frame, frameIdx) => {
+      <div className="frames four-col-homepage">
+        {/* Three main frames: Industry, Business Complexity, Annual Revenues */}
+        {frames.slice(0, 3).map((frame, frameIdx) => {
           let frameData = frame;
           const header = normalizedHeaders[frameIdx];
           if (header && header.trim().toLowerCase() === 'business complexity' && businessComplexityOptions.length > 0) {
@@ -123,34 +123,37 @@ function BusinessComplexity({
             </div>
           );
         })}
+        {/* Fourth column: Let's Go button */}
+        <div className="frame lets-go-frame">
+          <div className="lets-go-btn-wrapper">
+            <button className="lets-go-btn" onClick={async () => {
+              // Save value chain entry to MongoDB
+              const businessComplexity = getSelectedValue('Business Complexity');
+              const annualRevenues = getSelectedValue('Annual Revenues (US$)');
+              try {
+                const response = await saveValueChainEntry({
+                  name: userFlow.name,
+                  businessType: userFlow.businessType,
+                  label: userFlow.label,
+                  businessComplexity,
+                  annualRevenues
+                });
+                const entry = await response.json(); // Parse the response as JSON
+                // Pass the new entry's _id to the ValueChain page/component
+                if (entry && entry._id) {
+                  setShowValueChain(entry._id); // setShowValueChain now expects the entryId
+                } else {
+                  setShowValueChain(true); // fallback
+                }
+              } catch (err) {
+                // Optionally show error to user
+              }
+            }}>
+              Let's GO !
+            </button>
+          </div>
+        </div>
       </div>
-      <button className="lets-go-btn" onClick={async () => {
-        // Save value chain entry to MongoDB
-        const businessComplexity = getSelectedValue('Business Complexity');
-        const annualRevenues = getSelectedValue('Annual Revenues (US$)');
-        try {
-          const response = await saveValueChainEntry({
-            name: userFlow.name,
-            businessType: userFlow.businessType,
-            label: userFlow.label,
-            businessComplexity,
-            annualRevenues
-          });
-          const entry = await response.json(); // Parse the response as JSON
-          // Pass the new entry's _id to the ValueChain page/component
-          if (entry && entry._id) {
-            setShowValueChain(entry._id); // setShowValueChain now expects the entryId
-          } else {
-            console.error('No _id returned from saveValueChainEntry', entry);
-            setShowValueChain(true); // fallback
-          }
-        } catch (err) {
-          console.error('Error saving ValueChainEntry:', err);
-          // Optionally show error to user
-        }
-      }}>
-        Let's GO !
-      </button>
     </div>
   );
 }

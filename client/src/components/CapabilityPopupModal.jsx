@@ -41,8 +41,9 @@ function CapabilityPopupModal({
           minWidth: popupInfo.popupStep === 'description' ? 350 : (popupInfo.popupStep === 'expanded' ? 1200 : 700),
           maxWidth: popupInfo.popupStep === 'description' ? 350 : (popupInfo.popupStep === 'expanded' ? 1200 : 700),
           width: popupInfo.popupStep === 'description' ? 350 : (popupInfo.popupStep === 'expanded' ? 1200 : 700),
-          minHeight: isExpanded ? '80vh' : undefined,
+          minHeight: 'unset',
           maxHeight: '90vh', // Prevent modal from exceeding viewport height
+          height: 'auto',
           position: 'relative',
           transition: 'all 0.2s',
           display: 'flex',

@@ -40,9 +40,6 @@ const FrameSection = (props) => {
             maturityLevel: capabilityDoc.maturityLevel || 'Not available' // Ensure maturityLevel is passed correctly
           });
         }
-      })
-      .catch((err) => {
-        console.error('[FrameSection] Error in getCapabilityByNameAndEntry:', err);
       });
   }, [capabilityName, valueChainEntryName]);
 
@@ -93,7 +90,7 @@ const FrameSection = (props) => {
                 }
 
                 if (capabilityDoc) {
-                  const { businessMaturity, technologyMaturity, businessOwner, techOwner, ...otherFields } = capabilityDoc;
+                  const { businessMaturity, technologyMaturity, businessOwner, techOwner, maturityLevel, ...otherFields } = capabilityDoc;
                   const { businessNumber, technologyNumber } = await getMaturityNumbers(businessMaturity, technologyMaturity);
 
                   setPopupInfo({
@@ -101,6 +98,7 @@ const FrameSection = (props) => {
                     x: e.clientX,
                     y: e.clientY,
                     popupStep: 'gauge',
+                    maturityLevel: maturityLevel || 'Not available',
                     text: (
                       <div style={{
                         minWidth: 700,
@@ -114,7 +112,10 @@ const FrameSection = (props) => {
                         overflowX: 'auto'
                       }}>
                         {/* Top frame: Title */}
-                        <div style={{fontWeight: 700, fontSize: 22, marginBottom: 18, textAlign: 'center', borderBottom: '1px solid #eee', paddingBottom: 8}}>Capability Maturity</div>
+                        <div style={{fontWeight: 700, fontSize: 22, marginBottom: 0, textAlign: 'center', borderBottom: '1px solid #eee', paddingBottom: 4}}>Capability Maturity</div>
+                        <div style={{fontWeight: 500, fontSize: 18, marginBottom: 18, textAlign: 'center', color: '#444'}}>
+                          ({cap.name})
+                        </div>
                         {/* Second frame: Charts */}
                         <div style={{display: 'flex', alignItems: 'flex-start', gap: 0, justifyContent: 'center', margin: '0 0 18px 0', padding: 0}}>
                           {/* Business Gauge */}
@@ -127,13 +128,31 @@ const FrameSection = (props) => {
                           </div>
                         </div>
                         {/* Third frame: Owners */}
-                        <div style={{fontWeight: 600, marginBottom: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', borderTop: '1px solid #eee', paddingTop: 12}}>
+                        <div style={{fontWeight: 600, marginBottom: 8, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', borderTop: '1px solid #eee', paddingTop: 12}}>
                           <div>Business Owner: <b>{businessOwner}</b></div>
                           <div>Technology Owner: <b>{techOwner}</b></div>
                         </div>
                         {/* Fourth frame: Maturity Level */}
-                        <div style={{fontWeight: 600, textAlign: 'center', borderTop: '1px solid #eee', paddingTop: 12, fontSize: 18}}>
-                          Maturity Level: <b>{popupInfo.maturityLevel || 'Not available'}</b>
+                        <div style={{fontWeight: 600, textAlign: 'left', borderTop: '1px solid #eee', paddingTop: 12, fontSize: 18}}>
+                          Maturity Level: <b>{maturityLevel || 'Not available'}</b>
+                        </div>
+                        {/* Fifth frame: Description */}
+                        <div style={{
+                          marginTop: 18,
+                          background: '#f7f8fa',
+                          border: '1px solid #b6c2d6',
+                          borderRadius: 10,
+                          padding: '18px 16px',
+                          fontWeight: 500,
+                          fontSize: '1.1em',
+                          whiteSpace: 'pre-line',
+                          wordBreak: 'break-word',
+                          overflowWrap: 'break-word',
+                          minHeight: 60,
+                          width: '100%',
+                          boxSizing: 'border-box',
+                        }}>
+                          {cap.description || cap.shortDescription || 'No description available.'}
                         </div>
                       </div>
                     )

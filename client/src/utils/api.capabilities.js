@@ -22,20 +22,15 @@ const backendUrl = '';
 
 // Fetch a capability by name and valueChainEntryName
 export async function getCapabilityByNameAndEntry(capabilityName, valueChainEntryName) {
-  console.log('[api.capabilities.js] getCapabilityByNameAndEntry called with:', { capabilityName, valueChainEntryName });
   const url = `${backendUrl}/api/capabilities/debug/by-name-or-entry?capabilityName=${encodeURIComponent(capabilityName)}&valueChainEntryName=${encodeURIComponent(valueChainEntryName)}`;
-  console.log('[api.capabilities.js] Fetching URL:', url);
   try {
     const response = await fetch(url);
     if (!response.ok) {
-      console.error('[api.capabilities.js] Fetch failed with status:', response.status, 'statusText:', response.statusText);
       return [];
     }
     const data = await response.json();
-    console.log('[api.capabilities.js] Fetched data:', data);
-    return data.docs || []; // Return the `docs` array from the debug endpoint response
+    return data.docs || [];
   } catch (error) {
-    console.error('[api.capabilities.js] Fetch error:', error);
     return [];
   }
 }
