@@ -34,13 +34,31 @@ const ExpandedCapabilityView = ({ valueChainName, capabilityName, description, o
   const renderMultiline = val => (val || '').split(',').map((v, i) => <div key={i}>{v.trim()}</div>);
 
   return (
-    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', position: 'relative' }}>
+    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', position: 'relative' }}>
       {/* Top left: Value Chain name and Capability name */}
       <div style={{ fontWeight: 700, fontSize: '1.1em', margin: '0 0 8px 4px', color: '#2b5cb8' }}>
         {valueChainName} : {capabilityName}
       </div>
       {/* Top Frame/Row 1: Description in a card */}
-      <div style={{ ...cardStyle, minHeight: 60, margin: '8px 8px 24px 8px', width: 'calc(100% - 16px)', maxWidth: 'none', flex: 'unset', alignItems: 'flex-start', justifyContent: 'center', fontWeight: 500, fontSize: '1.1em', borderRadius: 10 }}>
+      <div style={{
+        ...cardStyle,
+        minHeight: 60,
+        margin: '8px 8px 24px 8px',
+        width: 'calc(100% - 16px)',
+        maxWidth: 'none',
+        flex: 'unset',
+        alignItems: 'flex-start',
+        justifyContent: 'center',
+        fontWeight: 500,
+        fontSize: '1.1em',
+        borderRadius: 10,
+        whiteSpace: 'pre-line',
+        wordBreak: 'break-word',
+        overflowWrap: 'break-word',
+        minHeight: 'unset',
+        height: 'auto',
+        maxHeight: 'none',
+      }}>
         {mongoDescription}
       </div>
       {/* Row 2: 3 Cards */}

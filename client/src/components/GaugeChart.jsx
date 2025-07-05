@@ -65,8 +65,11 @@ export default function GaugeChart({ value = 0, min = 0, max = 5, label, width =
   }, [v, type, businessOwner, technologyOwner, valueChainEntryId, valueChainEntryName]);
 
   // Adjust the layout to ensure labels under the gauge chart fit properly.
+  // Increase SVG height to accommodate longer descriptions
+  const descriptionHeight = 60; // Increased from 48 to 140 for longer text
+  const svgHeight = height + 80 + (descriptionHeight - 48); // adjust SVG height accordingly
   return (
-    <svg width={width + 40} height={height + 80} viewBox={`0 0 ${width + 40} ${height + 80}`}>
+    <svg width={width + 40} height={svgHeight} viewBox={`0 0 ${width + 40} ${svgHeight}`}>
       {/* Optional label above gauge */}
       {label && <text x={centerX} y={12} textAnchor="middle" fontSize="15" fontWeight="bold" fill="#444">{label}</text>}
       {/* Outer background arc */}
@@ -88,8 +91,19 @@ export default function GaugeChart({ value = 0, min = 0, max = 5, label, width =
       <text x={centerX} y={height + 40} textAnchor="middle" fontSize="22" fontWeight="bold" fill="#222">{maturityLabel}</text>
       {/* Maturity description under label */}
       {maturityDescription && (
-        <foreignObject x={(width + 40) * 0.1} y={height + 50} width={(width + 40) * 0.8} height={48}>
-          <div style={{ color: '#444', fontSize: 14, textAlign: 'center', wordBreak: 'break-word', width: '100%' }}>{maturityDescription}</div>
+        <foreignObject x={(width + 40) * 0.1} y={height + 50} width={(width + 40) * 0.8} height={descriptionHeight}>
+          <div style={{
+            color: '#444',
+            fontSize: 14,
+            textAlign: 'center',
+            wordBreak: 'break-word',
+            width: '100%',
+            height: '100%',
+            overflowY: 'auto',
+            whiteSpace: 'pre-line',
+            padding: 0,
+            boxSizing: 'border-box',
+          }}>{maturityDescription}</div>
         </foreignObject>
       )}
     </svg>

@@ -49,11 +49,50 @@ body {
   color: #888;
 }
 
-.frames {
+
+.frames.four-col-homepage {
   display: flex;
   flex-direction: row;
   justify-content: center;
-  gap: 32px;
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
+  max-width: 1300px;
+  margin: 0 auto 0 auto;
+}
+
+.lets-go-frame {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-width: 180px;
+  max-width: 260px;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.lets-go-btn-wrapper {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+
+.lets-go-btn {
+  position: static;
+  right: unset;
+  bottom: unset;
+  margin-top: 0;
+  margin-bottom: 0;
+  height: 48px;
+  min-width: 120px;
+  padding: 10px 32px;
+  font-size: 1.1em;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(37,99,235,0.10);
+  z-index: 1;
 }
 
 .column {
@@ -65,10 +104,12 @@ body {
 .frame {
   background: #fcfcfd;
   border-radius: 8px;
-  padding: 16px;
+  padding: 22px 20px 18px 20px;
   margin-bottom: 0;
   box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-  min-width: 180px;
+  min-width: 260px;
+  max-width: 360px;
+  flex: 1 1 300px;
 }
 
 .frame-btn {
