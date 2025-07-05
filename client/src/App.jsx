@@ -106,8 +106,8 @@ function App() {
   };
 
   useEffect(() => {
-    // Fetch value chains for the selected entry when entering businessCapabilities page
-    if (page === 'businessCapabilities' && entryId) {
+    // Fetch value chains for the selected entry when entering either businessCapabilities or strategicInitiative page
+    if ((page === 'businessCapabilities' || page === 'strategicInitiative') && entryId) {
       getValueChainsByEntryId(entryId)
         .then((chains) => {
           if (Array.isArray(chains)) {
@@ -261,7 +261,15 @@ function App() {
             }
             if (page === 'strategicInitiative') {
               // Removed debug log for page render
-              return <StrategicInitiativePage valueChain={userFlow.name} businessType={userFlow.businessType} label={userFlow.label} />;
+              return <StrategicInitiativePage 
+                valueChain={userFlow.name} 
+                businessType={userFlow.businessType} 
+                label={userFlow.label}
+                entryId={entryId}
+                valueChainIds={valueChainIds}
+                valueChainNames={valueChainNames}
+                userFlow={userFlow}
+              />;
             }
             // fallback
             return null;
