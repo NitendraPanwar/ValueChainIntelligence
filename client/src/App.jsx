@@ -15,6 +15,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { getHomepageIndustriesFromMongo, getHomepageBusinessComplexityFromMongo } from './utils/mongoApi';
 import { getValueChainsByEntryId } from './utils/api.valuechains';
 import ValueChainReady from './components/ValueChainReady';
+import TransformationDashboard from './components/TransformationDashboard';
 
 function App() {
   // Use a single page state for clarity
@@ -136,6 +137,7 @@ function App() {
         <Route path="/strategic-initiative/selected-capabilities" element={<SelectedCapabilitiesPage />} />
         <Route path="/load-data" element={<LoadDataPage />} />
         <Route path="/Read-Data" element={<ReadDataPage />} />
+        <Route path="/transformation-dashboard" element={<TransformationDashboard />} />
         <Route path="*" element={
           (() => {
             if (page === 'home') {

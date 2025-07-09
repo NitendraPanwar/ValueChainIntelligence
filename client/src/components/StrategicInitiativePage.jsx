@@ -1,9 +1,13 @@
-import React from 'react';
+import React, { useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { stragtegicfocus } from '../config';
 import BusinessCapabilities from './BusinessCapabilities';
 
 
 function StrategicInitiativePage({ valueChain, businessType, label, entryId, userFlow, valueChainIds = [], valueChainNames = [] }) {
+  const navigate = useNavigate();
+  // Use state instead of ref for selected capabilities to force re-render
+  const [selectedCapabilities, setSelectedCapabilities] = React.useState([]);
   // If userFlow is not passed, fallback to constructing it from props
   const effectiveUserFlow = userFlow || { name: valueChain, businessType, label };
   // ...existing code...
@@ -114,7 +118,34 @@ function StrategicInitiativePage({ valueChain, businessType, label, entryId, use
             valueChainIds={valueChainIds}
             valueChainNames={valueChainNames}
             filterMaturityOnly={false}
-            // debugFromParent removed
+            // showCheckboxInFilteredView will be managed internally
+            onCapabilitySelect={(cap, checked, frameName) => {
+              setSelectedCapabilities(prev => {
+                if (checked) {
+                  // Add if not already present
+                  if (!prev.some(c => c.name === cap.name && c.frame === frameName)) {
+                    return [...prev, { ...cap, frame: frameName }];
+                  }
+                  return prev;
+                } else {
+                  // Remove if present
+                  return prev.filter(c => !(c.name === cap.name && c.frame === frameName));
+                }
+              });
+            }}
+            selectedCapabilities={selectedCapabilities}
+            onNext={() => {
+              // Only trigger on filtered view's Next
+              // Pass valueChainEntryName and valueChainEntryId for saving initiative
+              navigate('/strategic-initiative/selected-capabilities', {
+                state: {
+                  selectedCapabilities,
+                  businessType,
+                  valueChainEntryName: userFlow?.name || '',
+                  valueChainEntryId: entryId || ''
+                }
+              });
+            }}
           />
         </div>
       </div>

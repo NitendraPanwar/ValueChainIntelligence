@@ -10,7 +10,9 @@ import CapabilityPopupModal from './CapabilityPopupModal';
 import { useValueChainData } from '../utils/useValueChainData';
 
 // Remove filterMaturityOnly from props, use local state
-function BusinessCapabilities({ businessType, onNext, userFlow, onBack, showCheckboxInFilteredView, onCapabilitySelect, selectedCapabilities, entryId, valueChainId, valueChainIds = [], valueChainNames = [], wizardStep, setWizardStep }) {
+function BusinessCapabilities({ businessType, onNext, userFlow, onBack, showCheckboxInFilteredView: showCheckboxInFilteredViewProp, onCapabilitySelect, selectedCapabilities, entryId, valueChainId, valueChainIds = [], valueChainNames = [], wizardStep, setWizardStep }) {
+  // Internal state to control checkbox visibility in filtered view for Strategic Initiative
+  const [showCheckboxInFilteredView, setShowCheckboxInFilteredView] = useState(false);
   // Use valueChainNames (array) and businessType for MongoDB query if provided, else fallback to userFlow.valueChainName
   const effectiveValueChainNames = valueChainNames.length > 0 ? valueChainNames : [userFlow.valueChainName || userFlow.name];
   const effectiveValueChainIds = valueChainIds.length > 0 ? valueChainIds : (valueChainId ? [valueChainId] : []);
@@ -250,7 +252,14 @@ function BusinessCapabilities({ businessType, onNext, userFlow, onBack, showChec
                   cursor: 'pointer',
                   marginRight: 24
                 }}
-                onClick={() => { setFilterMaturityOnly(false); setWizardStep && setWizardStep(2); }}
+                onClick={() => {
+                  setFilterMaturityOnly(false);
+                  setWizardStep && setWizardStep(2);
+                  // Hide checkbox when going back to unfiltered view in Strategic Initiative flow
+                  if (userFlow && userFlow.label === 'Strategic Initiative') {
+                    setShowCheckboxInFilteredView(false);
+                  }
+                }}
               >
                 Back
               </button>
@@ -285,7 +294,17 @@ function BusinessCapabilities({ businessType, onNext, userFlow, onBack, showChec
                 boxShadow: '0 2px 8px rgba(43,92,184,0.12)',
                 cursor: 'pointer'
               }}
-              onClick={() => { setFilterMaturityOnly(true); setWizardStep && setWizardStep(3); }}
+              onClick={() => {
+                // Custom behavior for Strategic Initiative flow
+                if (userFlow && userFlow.label === 'Strategic Initiative') {
+                  setShowCheckboxInFilteredView(true);
+                  setFilterMaturityOnly(true);
+                  setWizardStep && setWizardStep(3);
+                } else {
+                  setFilterMaturityOnly(true);
+                  setWizardStep && setWizardStep(3);
+                }
+              }}
             >
               Next
             </button>
@@ -300,6 +319,7 @@ function BusinessCapabilities({ businessType, onNext, userFlow, onBack, showChec
         setIsExpanded={setIsExpanded}
         setShowAssessment={setShowAssessment}
         userFlow={userFlow}
+        showCheckboxInFilteredView={(userFlow && userFlow.label === 'Strategic Initiative') ? (showCheckboxInFilteredView && filterMaturityOnly) : (showCheckboxInFilteredViewProp && filterMaturityOnly)}
         entryId={entryId} // Pass entryId for completeness
         // Remove onSaveSuccess since refreshMaturityData is gone
       />

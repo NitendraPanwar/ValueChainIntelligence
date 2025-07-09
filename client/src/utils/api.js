@@ -1,3 +1,9 @@
+// Fetch all Strategic Initiative Entries from the backend
+export async function fetchAllStrategicInitiatives() {
+  const res = await fetch('/api/initiative/all');
+  if (!res.ok) return [];
+  return res.json();
+}
 // Utility function to save a submission to the backend
 export async function saveSubmission(data) {
   return fetch('/api/save', {
@@ -112,4 +118,11 @@ export async function getCapabilitiesByEntryId(entryId) {
   const res = await fetch(`/api/capabilities/byEntryId/${encodeURIComponent(entryId)}`);
   if (!res.ok) throw new Error('Failed to fetch capabilities by entryId');
   return res.json();
+}
+
+// Fetch initiative and its capabilities by name
+export async function fetchInitiativeByName(initiativeName) {
+  const res = await fetch(`/api/initiative/by-name?initiativeName=${encodeURIComponent(initiativeName)}`);
+  if (!res.ok) throw new Error('Failed to fetch initiative');
+  return await res.json();
 }

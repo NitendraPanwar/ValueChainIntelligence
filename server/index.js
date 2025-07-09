@@ -1,3 +1,28 @@
+
+// ...existing code...
+
+// Place this route after app is initialized and before app.listen
+
+// ...existing code...
+
+// Place this route after all other routes and after app is fully initialized, but before app.listen
+// (This is a safe spot for new routes)
+
+
+// ...existing code...
+
+// Place this route at the end, after all other routes and after app is fully initialized, but before app.listen
+
+// (DO NOT place any routes before app = express())
+
+// Get all Strategic Initiative Entries
+// This must be after all app setup and before app.listen
+
+// ...existing code...
+
+// Place this just before app.listen
+// Get Strategic Initiative and its selected capabilities by initiative name
+// (Moved below app initialization)
 require('dotenv').config();
 const express = require('express');
 const fs = require('fs');
@@ -123,46 +148,53 @@ app.post('/api/saveCapabilityAssessment', async (req, res) => {
 
 // Save initiative (Strategic Initiative flow)
 app.post('/api/save-initiative', async (req, res) => {
-  const { initiativeName, initiativeOwner, initiativeScope, initiativeFunction, valueChainEntryName, label, selectedSuggestions } = req.body;
-  if (!initiativeName || !initiativeOwner || !initiativeScope || !initiativeFunction || !valueChainEntryName) {
+  const { initiativeName, initiativeOwner, initiativeScope, initiativeFunction, valueChainEntryName, valueChainEntryId, label, selectedSuggestions } = req.body;
+  if (!initiativeName || !initiativeOwner || !initiativeScope || !initiativeFunction || !valueChainEntryName || !valueChainEntryId) {
     return res.status(400).json({ error: 'All fields are required.' });
   }
   try {
     const db = await getDb();
-    // Check for existing initiative by initiativeName and valueChainEntryName
-    const exists = await db.collection('Submissions').findOne({ initiativeName, valueChainEntryName });
+    // Check for existing initiative with the same InitiativeName
+    const exists = await db.collection('Strategic Initiative Entries').findOne({ InitiativeName: initiativeName });
     if (exists) {
-      // Update existing
-      const updated = {
-        ...exists,
-        initiativeOwner,
-        initiativeScope,
-        initiativeFunction,
-        label: label || 'Strategic Initiative',
-        timestamp: new Date().toISOString(),
-        selectedSuggestions: selectedSuggestions || exists.selectedSuggestions || []
-      };
-      await db.collection('Submissions').updateOne(
-        { initiativeName, valueChainEntryName },
-        { $set: updated },
-        { upsert: true }
-      );
-      return res.json({ success: true, message: 'Initiative updated.' });
-    } else {
-      // Add new
-      const newEntry = {
-        initiativeName,
-        initiativeOwner,
-        initiativeScope,
-        initiativeFunction,
-        valueChainEntryName,
-        label: label || 'Strategic Initiative',
-        timestamp: new Date().toISOString(),
-        selectedSuggestions: selectedSuggestions || []
-      };
-      await db.collection('Submissions').insertOne(newEntry);
-      return res.json({ success: true, message: 'Initiative saved.' });
+      return res.status(409).json({ error: 'A Strategic Initiative with this name already exists.' });
     }
+    // Save to Strategic Initiative Entries collection
+    const newEntry = {
+      InitiativeName: initiativeName,
+      InitiativeOwner: initiativeOwner,
+      InitiativeScope: initiativeScope,
+      Function: initiativeFunction,
+      ValueChainEntryName: valueChainEntryName,
+      ValueChainEntryID: valueChainEntryId,
+      Label: label || 'Strategic Initiative',
+      Timestamp: new Date().toISOString(),
+      SelectedSuggestions: selectedSuggestions || []
+    };
+    // Save initiative and get the insertedId
+    const initiativeResult = await db.collection('Strategic Initiative Entries').insertOne(newEntry);
+    const initiativeId = initiativeResult.insertedId;
+
+    // For each selected suggestion, update the corresponding Capability
+    if (Array.isArray(selectedSuggestions)) {
+      for (const item of selectedSuggestions) {
+        // item.capabilityName, item.frameName, item.suggestion
+        await db.collection('Capabilities').updateOne(
+          {
+            valueChainEntryName: valueChainEntryName,
+            name: item.capabilityName
+          },
+          {
+            $set: {
+              StrategicInitiativeName: initiativeName,
+              StrategicInitiativeId: initiativeId,
+              Suggestion: item.suggestion
+            }
+          }
+        );
+      }
+    }
+    return res.json({ success: true, message: 'Initiative saved.' });
   } catch (err) {
     console.error('MongoDB initiative save error:', err);
     return res.status(500).json({ error: 'Failed to save initiative.' });
@@ -304,16 +336,25 @@ app.get('/api/buybuild', async (req, res) => {
   }
   try {
     const db = await getDb();
-    const row = await db.collection('Buy or Build').findOne({
-      $and: [
-        { $expr: { $eq: [ { $toLower: '$Capability Name' }, capabilityName.toString().toLowerCase() ] } },
-        { $expr: { $eq: [ { $toLower: '$Industry' }, industry.toString().toLowerCase() ] } }
-      ]
+    // Try exact match first
+    let row = await db.collection('Buy or Build').findOne({
+      'Capability Name': capabilityName,
+      'Industry': industry
     });
-    if (!row) return res.json({ description: '', suggestions: '' });
+    // If not found, try case-insensitive match (fallback)
+    if (!row) {
+      row = await db.collection('Buy or Build').findOne({
+        $and: [
+          { $expr: { $eq: [ { $toLower: '$Capability Name' }, capabilityName.toString().toLowerCase() ] } },
+          { $expr: { $eq: [ { $toLower: '$Industry' }, industry.toString().toLowerCase() ] } }
+        ]
+      });
+    }
+    if (!row) return res.json({ description: '', suggestions: '', buy: '' });
     res.json({
       description: row['Buy/Build Description'] || '',
-      suggestions: row['Suggestions'] || ''
+      suggestions: row['Suggestions'] || '',
+      buy: row['Buy'] || ''
     });
   } catch (err) {
     console.error('BuyBuild API error:', err);
@@ -693,6 +734,47 @@ app.get('/api/capabilities/debug/by-name-or-entry', async (req, res) => {
   }
 });
 
+
+// Get all Strategic Initiative Entries
+app.get('/api/initiative/all', async (req, res) => {
+  try {
+    const db = await getDb();
+    const initiatives = await db.collection('Strategic Initiative Entries').find({}).toArray();
+    res.json(initiatives);
+  } catch (err) {
+    console.error('Error fetching all strategic initiatives:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
+});
+
+// Get Strategic Initiative and its selected capabilities by initiative name
+app.get('/api/initiative/by-name', async (req, res) => {
+  const { initiativeName } = req.query;
+  if (!initiativeName) {
+    return res.status(400).json({ error: 'initiativeName is required' });
+  }
+  try {
+    const db = await getDb();
+    const initiative = await db.collection('Strategic Initiative Entries').findOne({ InitiativeName: initiativeName });
+    if (!initiative) {
+      return res.status(404).json({ error: 'Initiative not found' });
+    }
+    // Optionally, fetch more details if needed
+    res.json({
+      initiativeName: initiative.InitiativeName,
+      initiativeOwner: initiative.InitiativeOwner,
+      initiativeScope: initiative.InitiativeScope,
+      initiativeFunction: initiative.Function,
+      valueChainEntryName: initiative.ValueChainEntryName,
+      valueChainEntryId: initiative.ValueChainEntryID,
+      selectedSuggestions: initiative.SelectedSuggestions || []
+    });
+  } catch (err) {
+    console.error('Error fetching initiative by name:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
