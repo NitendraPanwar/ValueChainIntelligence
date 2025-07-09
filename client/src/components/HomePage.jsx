@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import InlineInfoIcon from './InlineInfoIcon';
-import { saveSubmission, getSubmissions } from '../utils/api';
+import { saveSubmission, getSubmissions, fetchAllStrategicInitiatives } from '../utils/api';
 import { getHomepageIndustriesFromMongo, getHomepageBusinessComplexityFromMongo } from '../utils/mongoApi';
 import { getAllValueChainEntries } from '../utils/api.valuechainentries';
 import { useNavigate } from 'react-router-dom';
@@ -23,6 +23,18 @@ function HomePage({ onOk }) {
   const [allValueChainEntries, setAllValueChainEntries] = useState([]); // For Value Chain button
   // Info tooltip state
   const [hoverInfo, setHoverInfo] = useState({ show: false, text: '', x: 0, y: 0 });
+  // Strategic Initiatives from MongoDB
+  const [strategicInitiatives, setStrategicInitiatives] = useState([]);
+  // Fetch all Strategic Initiative Entries from MongoDB when Strategic Initiative button is clicked
+  useEffect(() => {
+    if (showAdd && currentButtonLabel === 'Strategic Initiative') {
+      fetchAllStrategicInitiatives().then((entries) => {
+        setStrategicInitiatives(entries || []);
+      });
+    } else {
+      setStrategicInitiatives([]);
+    }
+  }, [showAdd, currentButtonLabel]);
 
   const navigate = useNavigate();
 
@@ -166,7 +178,7 @@ function HomePage({ onOk }) {
           'Strategic Office': 'New Strategic Office'
         };
         // Always render Add button first, then entry buttons
-        const allButtons = [
+        let allButtons = [
           <button
             key="add"
             className="frame-btn"
@@ -177,44 +189,117 @@ function HomePage({ onOk }) {
             <span style={{ fontSize: 14, color: '#666', marginTop: 4 }}>
               ({subLabelMap[currentButtonLabel] || 'New Entry'})
             </span>
-          </button>,
-          ...existingNames.map((entry, idx) => (
-            <button key={idx} className="frame-btn" style={{ width: 240, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
-              onClick={() => {
-                setSelectedEntry(null);
-                onOk(entry.businessType, entry.valueChainEntryName, entry.label, true); // Pass a flag to indicate direct jump to BusinessCapabilities
-              }}>
-              {currentButtonLabel === 'Strategic Initiative' ? (
-                <>
-                  <span style={{ fontWeight: 600 }}>{entry.initiativeName || entry.valueChainEntryName}</span>
-                  <span style={{ fontSize: 14, color: '#666', marginTop: 4 }}>
-                    ({entry.valueChainEntryName || entry.businessType})
-                  </span>
-                </>
-              ) : (
-                <>
-                  <span>{entry.valueChainEntryName}</span>
-                  <span style={{ fontSize: 14, color: '#666', marginTop: 4 }}>({entry.businessType})</span>
-                </>
-              )}
-            </button>
-          )),
-          // Show all ValueChainEntries as buttons when 'Value chain' is clicked
-          ...(currentButtonLabel === 'Value chain' ? allValueChainEntries.filter(e => e.name).map((entry, idx) => (
-            <button
-              key={entry._id || idx}
-              className="frame-btn"
-              style={{ width: 240, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
-              onClick={() => {
-                setSelectedEntry(null);
-                onOk(entry.businessType, entry.name, 'Value chain', true, entry._id); // <-- pass entry._id
-              }}
-            >
-              <span>{entry.name}</span>
-              <span style={{ fontSize: 14, color: '#666', marginTop: 4 }}>({entry.businessType})</span>
-            </button>
-          )) : [])
+          </button>
         ];
+        // Show Strategic Initiative Entries from MongoDB if Strategic Initiative button is clicked
+        if (currentButtonLabel === 'Strategic Initiative' && strategicInitiatives.length > 0) {
+          allButtons = allButtons.concat(
+            strategicInitiatives.map((entry, idx) => {
+              // Always fetch by name to avoid stale/wrong data
+              return (
+                <button
+                  key={entry._id || idx}
+                  className="frame-btn"
+                  style={{ width: 240, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
+                  onClick={async () => {
+                    setSelectedEntry(null);
+                    let details = entry;
+                    const queryName = entry.InitiativeName || entry.initiativeName || '';
+                    console.log('Fetching initiative by name:', queryName);
+                    try {
+                      const res = await fetch(`/api/initiative/by-name?initiativeName=${encodeURIComponent(queryName)}`);
+                      if (res.ok) {
+                        details = await res.json();
+                        console.log('Fetched initiative details:', details);
+                      } else {
+                        console.log('Failed to fetch initiative details, status:', res.status);
+                      }
+                    } catch (e) {
+                      console.error('Error fetching initiative details:', e);
+                    }
+                    // Store in localStorage for TransformationDashboard
+                    localStorage.setItem('initiativeName', details.initiativeName || details.InitiativeName || '');
+                    localStorage.setItem('initiativeOwner', details.initiativeOwner || details.InitiativeOwner || '');
+                    localStorage.setItem('initiativeScope', details.initiativeScope || details.InitiativeScope || '');
+                    localStorage.setItem('initiativeFunction', details.initiativeFunction || details.InitiativeFunction || details.Function || '');
+                    localStorage.setItem('valueChainEntryName', details.valueChainEntryName || details.ValueChainEntryName || '');
+                    localStorage.setItem('valueChainEntryId', details.valueChainEntryId || details.ValueChainEntryID || '');
+
+                    // Save full initiativeDetails object (including selectedSuggestions/capabilities if present)
+                    let selectedSuggestions = [];
+                    if (Array.isArray(details.selectedSuggestions)) {
+                      selectedSuggestions = details.selectedSuggestions;
+                    } else if (Array.isArray(details.selectedCapabilities)) {
+                      selectedSuggestions = details.selectedCapabilities;
+                    } else if (Array.isArray(details.capabilities)) {
+                      selectedSuggestions = details.capabilities;
+                    }
+                    const initiativeDetailsObj = {
+                      initiativeName: details.initiativeName || details.InitiativeName || '',
+                      initiativeOwner: details.initiativeOwner || details.InitiativeOwner || '',
+                      initiativeScope: details.initiativeScope || details.InitiativeScope || '',
+                      initiativeFunction: details.initiativeFunction || details.InitiativeFunction || details.Function || '',
+                      valueChainEntryName: details.valueChainEntryName || details.ValueChainEntryName || '',
+                      valueChainEntryId: details.valueChainEntryId || details.ValueChainEntryID || '',
+                      selectedSuggestions
+                    };
+                    localStorage.setItem('initiativeDetails', JSON.stringify(initiativeDetailsObj));
+                    // For backward compatibility, also set selectedCapabilities
+                    localStorage.setItem('selectedCapabilities', JSON.stringify(selectedSuggestions));
+
+                    // Navigate to TransformationDashboard
+                    navigate('/transformation-dashboard');
+                  }}
+                >
+                  <span style={{ fontWeight: 600 }}>{entry.InitiativeName}</span>
+                  <span style={{ fontSize: 14, color: '#666', marginTop: 4 }}>
+                    ({entry.ValueChainEntryName || entry.Function || ''})
+                  </span>
+                </button>
+              );
+            })
+          );
+        } else {
+          // Fallback to existingNames for other labels
+          allButtons = allButtons.concat(
+            existingNames.map((entry, idx) => (
+              <button key={idx} className="frame-btn" style={{ width: 240, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
+                onClick={() => {
+                  setSelectedEntry(null);
+                  onOk(entry.businessType, entry.valueChainEntryName, entry.label, true);
+                }}>
+                <span>{entry.valueChainEntryName}</span>
+                <span style={{ fontSize: 14, color: '#666', marginTop: 4 }}>({entry.businessType})</span>
+              </button>
+            ))
+          );
+        }
+        // Show all ValueChainEntries as buttons when 'Value chain' is clicked
+        if (currentButtonLabel === 'Value chain') {
+          allButtons = allButtons.concat(
+            allValueChainEntries.filter(e => e.name).map((entry, idx) => (
+              <button
+                key={entry._id || idx}
+                className="frame-btn"
+                style={{ width: 240, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
+                onClick={() => {
+                  setSelectedEntry(null);
+                  onOk(entry.businessType, entry.name, 'Value chain', true, entry._id);
+                }}
+              >
+                <span>{entry.name}</span>
+                <span style={{ fontSize: 14, color: '#666', marginTop: 4 }}>({entry.businessType})</span>
+              </button>
+            ))
+          );
+        }
+// --- API utility to fetch all Strategic Initiative Entries ---
+// Add this to client/src/utils/api.js:
+// export async function fetchAllStrategicInitiatives() {
+//   const res = await fetch('/api/initiative/all');
+//   if (!res.ok) return [];
+//   return res.json();
+// }
         // Pad with empty columns if fewer than 4
         while (allButtons.length < 4) {
           allButtons.push(<div key={`spacer-${allButtons.length}`} style={{ width: 240 }} />);

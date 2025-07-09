@@ -15,6 +15,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { getHomepageIndustriesFromMongo, getHomepageBusinessComplexityFromMongo } from './utils/mongoApi';
 import { getValueChainsByEntryId } from './utils/api.valuechains';
 import ValueChainReady from './components/ValueChainReady';
+import TransformationDashboard from './components/TransformationDashboard';
 
 function App() {
   // Use a single page state for clarity
@@ -106,8 +107,8 @@ function App() {
   };
 
   useEffect(() => {
-    // Fetch value chains for the selected entry when entering businessCapabilities page
-    if (page === 'businessCapabilities' && entryId) {
+    // Fetch value chains for the selected entry when entering either businessCapabilities or strategicInitiative page
+    if ((page === 'businessCapabilities' || page === 'strategicInitiative') && entryId) {
       getValueChainsByEntryId(entryId)
         .then((chains) => {
           if (Array.isArray(chains)) {
@@ -136,6 +137,7 @@ function App() {
         <Route path="/strategic-initiative/selected-capabilities" element={<SelectedCapabilitiesPage />} />
         <Route path="/load-data" element={<LoadDataPage />} />
         <Route path="/Read-Data" element={<ReadDataPage />} />
+        <Route path="/transformation-dashboard" element={<TransformationDashboard />} />
         <Route path="*" element={
           (() => {
             if (page === 'home') {
@@ -261,7 +263,15 @@ function App() {
             }
             if (page === 'strategicInitiative') {
               // Removed debug log for page render
-              return <StrategicInitiativePage valueChain={userFlow.name} businessType={userFlow.businessType} label={userFlow.label} />;
+              return <StrategicInitiativePage 
+                valueChain={userFlow.name} 
+                businessType={userFlow.businessType} 
+                label={userFlow.label}
+                entryId={entryId}
+                valueChainIds={valueChainIds}
+                valueChainNames={valueChainNames}
+                userFlow={userFlow}
+              />;
             }
             // fallback
             return null;

@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { getBuyBuildData } from '../utils/buyBuildData';
 import { initiativescope, initiativefunction } from '../config';
-import { saveInitiative } from '../utils/api';
+import { saveInitiative, fetchInitiativeByName } from '../utils/api';
 
 function SelectedCapabilitiesPage() {
   const location = useLocation();
+  const navigate = useNavigate();
   const selectedCapabilities = location.state?.selectedCapabilities || [];
   const businessType = location.state?.businessType || '';
   const [buyBuildInfo, setBuyBuildInfo] = useState([]); // [{ description, suggestions }]
@@ -15,6 +16,8 @@ function SelectedCapabilitiesPage() {
   const [initiativeScope, setInitiativeScope] = useState(initiativescope[0] || '');
   const [initiativeFunction, setInitiativeFunction] = useState(initiativefunction[0] || '');
   const [saveStatus, setSaveStatus] = useState('');
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+  const [duplicateInitiativeName, setDuplicateInitiativeName] = useState('');
 
   // Track selected suggestions for each capability
   const [selectedSuggestions, setSelectedSuggestions] = useState({}); // { [capName]: [suggestion, ...] }
@@ -41,6 +44,30 @@ function SelectedCapabilitiesPage() {
     });
   };
 
+  async function fetchCapabilitiesForInitiative(initiativeName) {
+    try {
+      const data = await fetchInitiativeByName(initiativeName);
+      // Store initiative details and selected capabilities for dashboard
+      localStorage.setItem('initiativeDetails', JSON.stringify({
+        initiativeName: data.initiativeName,
+        initiativeOwner: data.initiativeOwner,
+        initiativeScope: data.initiativeScope,
+        initiativeFunction: data.initiativeFunction,
+        valueChainEntryName: data.valueChainEntryName,
+        valueChainEntryId: data.valueChainEntryId
+      }));
+      // Convert selectedSuggestions to capability cards (if needed)
+      // Here, we just store the selectedSuggestions array
+      localStorage.setItem('selectedCapabilities', JSON.stringify(data.selectedSuggestions || []));
+      navigate('/transformation-dashboard');
+    } catch (e) {
+      // fallback: clear and redirect
+      localStorage.setItem('selectedCapabilities', JSON.stringify([]));
+      localStorage.setItem('initiativeDetails', JSON.stringify({ initiativeName }));
+      navigate('/transformation-dashboard');
+    }
+  }
+
   async function handleSaveInitiative() {
     setSaveStatus('');
     // Build array of { capabilityName, frameName, suggestion } for all checked suggestions
@@ -54,12 +81,15 @@ function SelectedCapabilitiesPage() {
         });
       });
     });
+    const valueChainEntryName = location.state?.valueChainEntryName || '';
+    const valueChainEntryId = location.state?.valueChainEntryId || location.state?.entryId || '';
     const payload = {
       initiativeName,
       initiativeOwner,
       initiativeScope,
       initiativeFunction,
-      valueChainEntryName: location.state?.valueChainEntryName || '',
+      valueChainEntryName,
+      valueChainEntryId,
       label: 'Strategic Initiative',
       selectedSuggestions: selectedSuggestionsArray
     };
@@ -67,17 +97,43 @@ function SelectedCapabilitiesPage() {
       const res = await saveInitiative(payload);
       if (res.success) {
         setSaveStatus('Saved!');
+        // After saving, fetch the latest initiative from backend before navigating
+        const latest = await fetchInitiativeByName(initiativeName);
+        // Store selectedCapabilities and initiative details in localStorage for dashboard (optional, for legacy)
+        localStorage.setItem('selectedCapabilities', JSON.stringify(latest.selectedSuggestions || []));
+        localStorage.setItem('initiativeDetails', JSON.stringify({
+          initiativeName: latest.initiativeName,
+          initiativeOwner: latest.initiativeOwner,
+          initiativeScope: latest.initiativeScope,
+          initiativeFunction: latest.initiativeFunction,
+          valueChainEntryName: latest.valueChainEntryName,
+          valueChainEntryId: latest.valueChainEntryId
+        }));
         setTimeout(() => {
           setShowPopup(false);
           setSaveStatus('');
-        }, 1200);
+          navigate('/transformation-dashboard');
+        }, 500);
+      } else if (res.error && res.error.includes('already exists')) {
+        setDuplicateInitiativeName(initiativeName);
+        setShowDuplicateDialog(true);
       } else {
         setSaveStatus('Error saving.');
       }
     } catch (e) {
-      setSaveStatus('Error saving.');
+      if (e && e.error && e.error.includes('already exists')) {
+        setDuplicateInitiativeName(initiativeName);
+        setShowDuplicateDialog(true);
+      } else {
+        setSaveStatus('Error saving.');
+      }
     }
   }
+
+  // Log for debugging: show what is being rendered for each capability
+  // useEffect(() => {
+  //   console.log('Rendering SelectedCapabilitiesPage with:', { selectedCapabilities, businessType, buyBuildInfo });
+  // }, [selectedCapabilities, businessType, buyBuildInfo]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'row', height: '100vh', width: '100vw', background: '#f7f8fa' }}>
@@ -92,7 +148,8 @@ function SelectedCapabilitiesPage() {
             <div style={{ border: '1px solid #e3e8f0', borderRadius: 8, padding: 12, background: '#f7f8fa' }}>
               <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 6 }}>Buy/Build?</div>
               <div style={{ color: '#333', fontSize: 15, minHeight: 40 }}>
-                {buyBuildInfo[idx]?.description || <span style={{ color: '#aaa' }}>No data found.</span>}
+                <div><b>Recommendation:</b> {buyBuildInfo[idx]?.buy || <span style={{ color: '#aaa' }}>No data found.</span>}</div>
+                <div style={{ marginTop: 6 }}><b>Description:</b> {buyBuildInfo[idx]?.description || <span style={{ color: '#aaa' }}>No data found.</span>}</div>
               </div>
             </div>
             {/* Suggestions Section */}
@@ -101,7 +158,7 @@ function SelectedCapabilitiesPage() {
               <div style={{ color: '#333', fontSize: 15, minHeight: 40 }}>
                 {buyBuildInfo[idx]?.suggestions ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    {buyBuildInfo[idx].suggestions.split('\n').filter(Boolean).map((suggestion, sIdx) => (
+                    {buyBuildInfo[idx].suggestions.split(',').map(s => s.trim()).filter(Boolean).map((suggestion, sIdx) => (
                       <label key={sIdx} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <input
                           type="checkbox"
@@ -162,6 +219,42 @@ function SelectedCapabilitiesPage() {
               <button onClick={handleSaveInitiative} style={{ padding: '8px 18px', borderRadius: 8, background: '#2b5cb8', color: '#fff', fontWeight: 600, border: 'none', fontSize: 16, cursor: 'pointer' }}>Save</button>
             </div>
             {saveStatus && <div style={{ color: saveStatus === 'Saved!' ? 'green' : 'red', marginTop: 8 }}>{saveStatus}</div>}
+          </div>
+        </div>
+      )}
+      {/* Duplicate Initiative Dialog */}
+      {showDuplicateDialog && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          background: 'rgba(0,0,0,0.25)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 2000
+        }}>
+          <div style={{ background: '#fff', borderRadius: 12, padding: 32, minWidth: 340, boxShadow: '0 4px 24px rgba(0,0,0,0.12)', display: 'flex', flexDirection: 'column', gap: 18 }}>
+            <h2 style={{ margin: 0, fontSize: 20, color: 'red' }}>Strategic Initiative Exists</h2>
+            <div style={{ fontSize: 16 }}>A Strategic Initiative with the name "{duplicateInitiativeName}" already exists. Do you want to continue and view the dashboard for this initiative?</div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 8 }}>
+              <button onClick={() => setShowDuplicateDialog(false)} style={{ padding: '8px 18px', borderRadius: 8, background: '#e3e8f0', color: '#333', fontWeight: 600, border: 'none', fontSize: 16, cursor: 'pointer' }}>Cancel</button>
+              <button onClick={() => {
+                setShowDuplicateDialog(false);
+                // Store initiative details for dashboard on duplicate as well
+                localStorage.setItem('initiativeDetails', JSON.stringify({
+                  initiativeName: duplicateInitiativeName,
+                  initiativeOwner,
+                  initiativeScope,
+                  initiativeFunction,
+                  valueChainEntryName,
+                  valueChainEntryId
+                }));
+                fetchCapabilitiesForInitiative(duplicateInitiativeName);
+              }} style={{ padding: '8px 18px', borderRadius: 8, background: '#2b5cb8', color: '#fff', fontWeight: 600, border: 'none', fontSize: 16, cursor: 'pointer' }}>Continue</button>
+            </div>
           </div>
         </div>
       )}

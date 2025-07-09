@@ -34,38 +34,56 @@ function CapabilityButton({
 
   return (
     <div className="capability-btn-wrapper" style={{ position: 'relative' }}>
-      {/* Traffic light indicator */}
-      {maturity && (
-        <span style={{
-          position: 'absolute',
-          left: 6,
-          top: '50%',
-          transform: 'translateY(-50%)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 2,
-          zIndex: 4
-        }}>
-          <span style={{ width: 12, height: 12, borderRadius: '50%', background: color, border: '1.5px solid #888', display: 'block' }} />
-        </span>
-      )}
-      {/* Checkbox for filtered view in StrategicInitiativePage */}
-      {showCheckboxInFilteredView && (
-        <input
-          type="checkbox"
+      {/* Checkbox and dot stacked for filtered view in StrategicInitiativePage */}
+      {showCheckboxInFilteredView ? (
+        <div
           style={{
             position: 'absolute',
-            top: 4,
-            right: 4,
-            zIndex: 5,
-            width: 16,
-            height: 16
+            left: 4,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            zIndex: 6,
+            height: 32,
+            // pointerEvents: 'auto', // REMOVE this line
           }}
-          tabIndex={-1}
-          aria-label="Select capability"
-          checked={isChecked}
-          onChange={e => onCapabilitySelect && onCapabilitySelect(cap, e.target.checked, frameName)}
-        />
+        >
+          <input
+            type="checkbox"
+            style={{
+              width: 16,
+              height: 16,
+              marginBottom: 2,
+              // pointerEvents: 'auto', // REMOVE this line
+            }}
+            aria-label="Select capability"
+            checked={isChecked}
+            onChange={e => {
+              e.stopPropagation();
+              if (onCapabilitySelect) onCapabilitySelect(cap, e.target.checked, frameName);
+            }}
+          />
+          {maturity && (
+            <span style={{ width: 12, height: 12, borderRadius: '50%', background: color, border: '1.5px solid #888', display: 'block', marginTop: 2 }} />
+          )}
+        </div>
+      ) : (
+        maturity && (
+          <span style={{
+            position: 'absolute',
+            left: 6,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 2,
+            zIndex: 4
+          }}>
+            <span style={{ width: 12, height: 12, borderRadius: '50%', background: color, border: '1.5px solid #888', display: 'block' }} />
+          </span>
+        )
       )}
       {/* Info icon, hidden in filtered view on StrategicInitiativePage */}
       {!showCheckboxInFilteredView && (

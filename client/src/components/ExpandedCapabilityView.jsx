@@ -55,7 +55,6 @@ const ExpandedCapabilityView = ({ valueChainName, capabilityName, description, o
         whiteSpace: 'pre-line',
         wordBreak: 'break-word',
         overflowWrap: 'break-word',
-        minHeight: 'unset',
         height: 'auto',
         maxHeight: 'none',
       }}>
