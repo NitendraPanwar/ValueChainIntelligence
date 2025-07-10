@@ -98,22 +98,25 @@ function SelectedCapabilitiesPage() {
       if (res.success) {
         setSaveStatus('Saved!');
         // After saving, fetch the latest initiative from backend before navigating
-        const latest = await fetchInitiativeByName(initiativeName);
-        // Store selectedCapabilities and initiative details in localStorage for dashboard (optional, for legacy)
-        localStorage.setItem('selectedCapabilities', JSON.stringify(latest.selectedSuggestions || []));
-        localStorage.setItem('initiativeDetails', JSON.stringify({
-          initiativeName: latest.initiativeName,
-          initiativeOwner: latest.initiativeOwner,
-          initiativeScope: latest.initiativeScope,
-          initiativeFunction: latest.initiativeFunction,
-          valueChainEntryName: latest.valueChainEntryName,
-          valueChainEntryId: latest.valueChainEntryId
-        }));
-        setTimeout(() => {
+        // Wait a short moment to ensure MongoDB is updated (optional, but helps with eventual consistency)
+        setTimeout(async () => {
+          // Always use the initiativeName from the input field, not from any previous state
+          const latest = await fetchInitiativeByName(initiativeName);
+          // Overwrite localStorage with the correct initiative
+          localStorage.setItem('initiativeName', initiativeName);
+          localStorage.setItem('selectedCapabilities', JSON.stringify(latest.selectedSuggestions || []));
+          localStorage.setItem('initiativeDetails', JSON.stringify({
+            initiativeName: latest.initiativeName,
+            initiativeOwner: latest.initiativeOwner,
+            initiativeScope: latest.initiativeScope,
+            initiativeFunction: latest.initiativeFunction,
+            valueChainEntryName: latest.valueChainEntryName,
+            valueChainEntryId: latest.valueChainEntryId
+          }));
           setShowPopup(false);
           setSaveStatus('');
           navigate('/transformation-dashboard');
-        }, 500);
+        }, 300);
       } else if (res.error && res.error.includes('already exists')) {
         setDuplicateInitiativeName(initiativeName);
         setShowDuplicateDialog(true);
