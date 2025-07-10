@@ -55,3 +55,12 @@ export const initiativefunction = [
   'CIO',
   'CTO'
 ];
+
+// Initiative function Focus button list
+export const capabilityStatus = [
+  'New',
+  'In Progress',
+  'Cancelled',
+  'Done',
+  'Closed'
+];

@@ -1,28 +1,6 @@
 
-// ...existing code...
-
-// Place this route after app is initialized and before app.listen
-
-// ...existing code...
-
-// Place this route after all other routes and after app is fully initialized, but before app.listen
-// (This is a safe spot for new routes)
 
 
-// ...existing code...
-
-// Place this route at the end, after all other routes and after app is fully initialized, but before app.listen
-
-// (DO NOT place any routes before app = express())
-
-// Get all Strategic Initiative Entries
-// This must be after all app setup and before app.listen
-
-// ...existing code...
-
-// Place this just before app.listen
-// Get Strategic Initiative and its selected capabilities by initiative name
-// (Moved below app initialization)
 require('dotenv').config();
 const express = require('express');
 const fs = require('fs');
@@ -36,6 +14,48 @@ const PORT = process.env.PORT || 4000;
 
 app.use(cors());
 app.use(express.json());
+
+// Update contact person and status for a capability in a strategic initiative
+// This route must be after app and middleware initialization
+app.post('/api/initiative/capability/update', async (req, res) => {
+  const { initiativeName, capabilityName, contactPerson, status } = req.body;
+  if (!initiativeName || !capabilityName) {
+    return res.status(400).json({ error: 'initiativeName and capabilityName are required.' });
+  }
+  try {
+    const db = await getDb();
+    // Find the initiative
+    const initiative = await db.collection('Strategic Initiative Entries').findOne({ InitiativeName: initiativeName });
+    if (!initiative) {
+      return res.status(404).json({ error: 'Initiative not found.' });
+    }
+    // Find the correct capability in the initiative's SelectedSuggestions array
+    let updated = false;
+    const updatedSuggestions = (initiative.SelectedSuggestions || []).map(item => {
+      if ((item.capabilityName || item.name) === capabilityName) {
+        updated = true;
+        return {
+          ...item,
+          contactPerson,
+          status
+        };
+      }
+      return item;
+    });
+    if (!updated) {
+      return res.status(404).json({ error: 'Capability not found in initiative.' });
+    }
+    // Update the initiative document
+    await db.collection('Strategic Initiative Entries').updateOne(
+      { InitiativeName: initiativeName },
+      { $set: { SelectedSuggestions: updatedSuggestions } }
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error updating capability contact/status:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 // Save submission
 app.post('/api/save', async (req, res) => {
