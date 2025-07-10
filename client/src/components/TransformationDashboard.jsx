@@ -62,6 +62,27 @@ function TransformationDashboard() {
           Powered by Beyond Axis
         </h2>
       </div>
+      {/* Floating Save Button */}
+      <button
+        style={{
+          position: 'fixed',
+          bottom: 40,
+          right: 48,
+          padding: '18px 48px',
+          borderRadius: 32,
+          background: '#2b5cb8',
+          color: '#fff',
+          fontWeight: 700,
+          border: 'none',
+          fontSize: 22,
+          cursor: 'pointer',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.13)',
+          zIndex: 2000
+        }}
+        onClick={() => { /* TODO: Implement save logic for status fields */ }}
+      >
+        Save
+      </button>
       <div style={{ height: 90 }} />
       <div style={{
         background: '#fff',
@@ -230,6 +251,47 @@ function TransformationDashboard() {
               );
             })
           )}
+        </div>
+        {/* Add Current Status and Previous Status text boxes at the bottom */}
+        <div style={{ marginTop: 40, display: 'flex', gap: 40, justifyContent: 'center' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', width: '45vw', height: '45vw', maxWidth: 700, maxHeight: 700 }}>
+            <label htmlFor="current-status" style={{ fontWeight: 600, marginBottom: 10, fontSize: 20 }}>Current Status</label>
+            <textarea
+              id="current-status"
+              style={{
+                width: '100%',
+                height: '100%',
+                resize: 'none',
+                padding: 24,
+                borderRadius: 16,
+                border: '2px solid #b6c2d6',
+                fontSize: 22,
+                boxSizing: 'border-box',
+                background: '#f7f8fa',
+                fontWeight: 500
+              }}
+              placeholder="Enter current status..."
+            />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', width: '45vw', height: '45vw', maxWidth: 700, maxHeight: 700 }}>
+            <label htmlFor="previous-status" style={{ fontWeight: 600, marginBottom: 10, fontSize: 20 }}>Previous Status</label>
+            <textarea
+              id="previous-status"
+              style={{
+                width: '100%',
+                height: '100%',
+                resize: 'none',
+                padding: 24,
+                borderRadius: 16,
+                border: '2px solid #b6c2d6',
+                fontSize: 22,
+                boxSizing: 'border-box',
+                background: '#f7f8fa',
+                fontWeight: 500
+              }}
+              placeholder="Enter previous status..."
+            />
+          </div>
         </div>
       </div>
     </div>
