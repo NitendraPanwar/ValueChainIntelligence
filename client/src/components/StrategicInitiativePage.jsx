@@ -27,8 +27,9 @@ function StrategicInitiativePage({ valueChain, businessType, label, entryId, use
           textAlign: 'right',
         }}
       >
-        <h1 style={{ margin: 0, fontSize: '2em' }}>Value Chain Intelligence</h1>
+        <h1 style={{ margin: 0, fontSize: '2em' }}>Boardroom Operating System</h1>
         <h2 style={{ margin: 0, fontSize: '1.1em', fontWeight: 400 }}>
+          <img src="/images/Logo.png" alt="Logo" style={{ height: 24, marginRight: 8, verticalAlign: 'middle' }} />
           Powered by Beyond Axis
         </h2>
       </div>
