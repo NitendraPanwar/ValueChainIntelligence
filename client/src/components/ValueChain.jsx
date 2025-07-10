@@ -81,8 +81,11 @@ function ValueChain({ selected, frames, headers, onBack, onNextPage, preselected
   return (
     <div className="container">
       <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', zIndex: 100, background: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', padding: '16px 0 8px 0', textAlign: 'right' }}>
-        <h1 style={{ margin: 0, fontSize: '2em' }}>Value Chain Intelligence</h1>
-        <h2 style={{ margin: 0, fontSize: '1.1em', fontWeight: 400 }}>Powered by Beyond Axis</h2>
+        <h1 style={{ margin: 0, fontSize: '2em' }}>Boardroom Operating System</h1>
+        <h2 style={{ margin: 0, fontSize: '1.1em', fontWeight: 400 }}>
+          <img src="/images/Logo.png" alt="Logo" style={{ height: 24, marginRight: 8, verticalAlign: 'middle' }} />
+          Powered by Beyond Axis
+        </h2>
       </div>
       <div className="top-frame">
         Value Chain{businessType ? ' - ' + businessType : ''}

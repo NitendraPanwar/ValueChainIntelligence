@@ -100,10 +100,11 @@ function HomePage({ onOk }) {
           textAlign: 'right',
         }}
       >
-        <h1 style={{ margin: 0, fontSize: '2em' }}>Value Chain Intelligence</h1>
-        <h2 style={{ margin: 0, fontSize: '1.1em', fontWeight: 400 }}>
-          Powered by Beyond Axis
-        </h2>
+        <h1 style={{ display: 'inline', margin: 0, fontSize: '2em', verticalAlign: 'middle' }}>Boardroom Operating System</h1>
+        <div style={{ marginTop: 4 }}>
+          <img src="/images/Logo.png" alt="Logo" style={{ height: 36, marginRight: 8, verticalAlign: 'middle' }} />
+          <span style={{ fontSize: '1.1em', fontWeight: 400, verticalAlign: 'middle' }}>Powered by Beyond Axis</span>
+        </div>
       </div>
       <div style={{ height: 90 }} />
       <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginBottom: 24 }}>

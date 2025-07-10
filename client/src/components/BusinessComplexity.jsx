@@ -70,8 +70,11 @@ function BusinessComplexity({
         padding: '16px 0 8px 0',
         textAlign: 'right',
       }}>
-        <h1 style={{ margin: 0, fontSize: '2em' }}>Value Chain Intelligence</h1>
-        <h2 style={{ margin: 0, fontSize: '1.1em', fontWeight: 400 }}>Powered by Beyond Axis</h2>
+        <h1 style={{ margin: 0, fontSize: '2em' }}>Boardroom Operating System</h1>
+        <h2 style={{ margin: 0, fontSize: '1.1em', fontWeight: 400 }}>
+          <img src="/images/Logo.png" alt="Logo" style={{ height: 24, marginRight: 8, verticalAlign: 'middle' }} />
+          Powered by Beyond Axis
+        </h2>
       </div>
       <div className="top-frame homepage" style={{ marginTop: 0, marginBottom: 0 }}>
         Let’s build your future ready value chain!
