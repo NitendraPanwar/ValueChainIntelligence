@@ -5,7 +5,7 @@
 ### Prerequisites
 Before you begin, ensure you have the following installed on your system:
 - **Git** (version 2.0 or higher) - [Download Git](https://git-scm.com/downloads)
-- **Node.js** (version 16.x or higher) - [Download Node.js](https://nodejs.org/)
+- **Node.js** (version 18.x or higher) - [Download Node.js](https://nodejs.org/)
 - **npm** (comes with Node.js) or **yarn** package manager
 - A **MongoDB Atlas** account (for database features) - [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
 - A code editor (recommended: [VS Code](https://code.visualstudio.com/))
