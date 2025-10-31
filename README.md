@@ -1,5 +1,203 @@
 # Value Chain Intelligence App
 
+## Getting Started: Setting Up Your Local Repository
+
+### Prerequisites
+Before you begin, ensure you have the following installed on your system:
+- **Git** (version 2.0 or higher) - [Download Git](https://git-scm.com/downloads)
+- **Node.js** (version 18.x or higher) - [Download Node.js](https://nodejs.org/)
+- **npm** (comes with Node.js) or **yarn** package manager
+- A **MongoDB Atlas** account (for database features) - [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
+- A code editor (recommended: [VS Code](https://code.visualstudio.com/))
+
+### Option 1: Clone the Existing Repository
+
+If you want to work with the existing project, follow these steps:
+
+1. **Open your terminal or command prompt**
+
+2. **Navigate to your desired directory:**
+   ```sh
+   cd /path/to/your/workspace
+   ```
+
+3. **Clone the repository:**
+   ```sh
+   git clone https://github.com/NitendraPanwar/ValueChainIntelligence.git
+   ```
+
+4. **Navigate into the project directory:**
+   ```sh
+   cd ValueChainIntelligence
+   ```
+
+5. **Verify the clone was successful:**
+   ```sh
+   git status
+   ```
+   You should see: `On branch main` (or the default branch name)
+
+6. **Install root dependencies:**
+   ```sh
+   npm install
+   ```
+
+7. **Set up the backend:**
+   ```sh
+   cd server
+   npm install
+   ```
+   
+   Create a `.env` file in the `server` directory with your MongoDB credentials:
+   ```
+   MONGODB_URI=your_mongodb_connection_string
+   PORT=3000
+   ```
+
+8. **Set up the frontend:**
+   ```sh
+   cd ../client
+   npm install
+   ```
+   
+   If needed, create a `.env` file in the `client` directory:
+   ```
+   VITE_API_URL=http://localhost:3000
+   ```
+
+### Option 2: Initialize a New Local Repository
+
+If you're starting fresh or want to create a new Git repository from scratch:
+
+1. **Create a new project directory:**
+   ```sh
+   mkdir ValueChainIntelligence
+   cd ValueChainIntelligence
+   ```
+
+2. **Initialize a new Git repository:**
+   ```sh
+   git init
+   ```
+   This creates a `.git` directory that tracks your project's version history.
+
+3. **Configure your Git identity (if not already configured):**
+   ```sh
+   git config user.name "Your Name"
+   git config user.email "your.email@example.com"
+   ```
+
+4. **Create initial project structure:**
+   - Add your project files (server, client, etc.)
+   - Create a `.gitignore` file to exclude unnecessary files
+
+5. **Stage your files:**
+   ```sh
+   git add .
+   ```
+
+6. **Create your first commit:**
+   ```sh
+   git commit -m "Initial commit"
+   ```
+
+7. **Connect to a remote repository (optional):**
+   ```sh
+   git remote add origin https://github.com/yourusername/your-repo-name.git
+   git branch -M main
+   git push -u origin main
+   ```
+
+### Basic Git Commands You'll Need
+
+- **Check repository status:**
+  ```sh
+  git status
+  ```
+
+- **View commit history:**
+  ```sh
+  git log --oneline
+  ```
+
+- **Create a new branch:**
+  ```sh
+  git checkout -b feature/your-feature-name
+  ```
+
+- **Switch between branches:**
+  ```sh
+  git checkout branch-name
+  ```
+
+- **Pull latest changes:**
+  ```sh
+  git pull origin main
+  ```
+
+- **Stage and commit changes:**
+  ```sh
+  git add .
+  git commit -m "Your commit message"
+  ```
+
+- **Push changes to remote:**
+  ```sh
+  git push origin branch-name
+  ```
+
+### Troubleshooting Common Git Issues
+
+**Issue: "Permission denied (publickey)"**
+- Solution: Set up SSH keys or use HTTPS with credentials
+  ```sh
+  git remote set-url origin https://github.com/username/repo.git
+  ```
+
+**Issue: "fatal: not a git repository"**
+- Solution: Make sure you're in the correct directory or initialize Git
+  ```sh
+  git init
+  ```
+
+**Issue: Merge conflicts**
+- Solution: Open conflicted files, resolve conflicts manually, then:
+  ```sh
+  git add .
+  git commit -m "Resolved merge conflicts"
+  ```
+
+**Issue: Accidentally committed sensitive data**
+- Solution: Remove from history (be careful with this):
+  ```sh
+  git filter-branch --force --index-filter \
+    "git rm --cached --ignore-unmatch path/to/sensitive/file" \
+    --prune-empty --tag-name-filter cat -- --all
+  ```
+  Better: Use `.gitignore` to prevent committing sensitive files in the first place.
+
+### Quick Start After Setup
+
+Once your local repository is set up, you can start working:
+
+1. **Start the backend server** (in one terminal):
+   ```sh
+   cd server
+   node index.js
+   ```
+   Backend runs on: http://localhost:3000
+
+2. **Start the frontend app** (in another terminal):
+   ```sh
+   cd client
+   npm run dev
+   ```
+   Frontend runs on: http://localhost:5173
+
+3. **Open your browser** and navigate to the URL shown in your terminal (usually http://localhost:5173)
+
+---
+
 ## Current Progress (as of June 20, 2025)
 - Modular React app with multi-step wizard flow for value chain, business complexity, capability assessment, and strategic initiative management.
 - Strategic Initiative flow: select value chain entry, select capabilities, check suggestions, and save initiatives with associated suggestions.
@@ -41,18 +239,23 @@
 - See the `Load Data` page in the app for these features.
 
 ## How to Resume Work
+
+> **Note:** If this is your first time setting up the project, please refer to the [Getting Started](#getting-started-setting-up-your-local-repository) section above for initial setup instructions.
+
 1. **Start the backend server:**
    ```sh
-   cd ValueChainIntelligence/server
-   npm install
+   cd server
    node index.js
    ```
-2. **Start the frontend app:**
+   The server will start on http://localhost:3000
+
+2. **Start the frontend app** (in a new terminal):
    ```sh
-   cd ../client
-   npm install
+   cd client
    npm run dev
    ```
+   The app will start on http://localhost:5173
+
 3. **Open the app in your browser:**
    - Visit [http://localhost:5173](http://localhost:5173) (or the port shown in your terminal)
 
